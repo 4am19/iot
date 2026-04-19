@@ -177,32 +177,36 @@
 
          <!-- Manual Control Buttons -->
          <div class="bg-white/40 backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-white relative flex flex-col justify-center min-h-[340px] animation-fade-in-up delay-700">
-             <div class="flex justify-between items-center mb-8">
+             <div class="flex justify-between items-center mb-6">
                <h3 class="text-slate-400 font-extrabold text-[11px] uppercase tracking-[0.2em] bg-white/60 px-4 py-1.5 rounded-full border border-white/60">Eksekusi Manual</h3>
                <span class="relative flex h-3 w-3" v-if="!settings.is_auto_mode">
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-rose-400"></span>
                   <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
                </span>
              </div>
+
+             <!-- Pending Command Indicator -->
+             <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
+               <div v-if="pendingCommand" class="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-2xl text-xs font-bold">
+                 <svg class="w-4 h-4 animate-spin text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                 <span>Mengirim perintah ke ESP32... Tunggu response berikutnya (~10 detik)</span>
+               </div>
+             </transition>
              
              <div class="grid grid-cols-1 gap-5">
-                <button @click="setManualPosition('Di Luar (Menjemur)')" :disabled="settings.is_auto_mode" 
+                <button @click="pushCommand('move_out')" :disabled="settings.is_auto_mode || isSendingCommand"
                         class="relative overflow-hidden w-full py-6 md:py-7 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 font-black text-lg md:text-xl rounded-[1.5rem] shadow-[0_8px_20px_rgba(79,70,229,0.3)] hover:shadow-[0_12px_30px_rgba(79,70,229,0.4)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-4 group">
-                   <!-- Shine effect -->
                    <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-[150%] skew-x-[-20deg] group-hover:animate-shine disabled:hidden"></div>
-                   
-                   <div class="w-10 h-10 bg-white/20 rounded-xl group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm disabled:bg-slate-300">
+                   <div class="w-10 h-10 bg-white/20 rounded-xl group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm">
                       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                    </div>
                    <span class="tracking-wide text-sm md:text-xl">KELUARKAN JEMURAN</span>
                 </button>
                 
-                <button @click="setManualPosition('Di Dalam')" :disabled="settings.is_auto_mode" 
+                <button @click="pushCommand('move_in')" :disabled="settings.is_auto_mode || isSendingCommand"
                         class="relative overflow-hidden w-full py-6 md:py-7 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 font-black text-lg md:text-xl rounded-[1.5rem] shadow-[0_8px_20px_rgba(244,63,94,0.3)] hover:shadow-[0_12px_30px_rgba(244,63,94,0.4)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-4 group">
-                   <!-- Shine effect -->
                    <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-[150%] skew-x-[-20deg] group-hover:animate-shine disabled:hidden"></div>
-                   
-                   <div class="w-10 h-10 bg-white/20 rounded-xl group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm disabled:bg-slate-300">
+                   <div class="w-10 h-10 bg-white/20 rounded-xl group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm">
                       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                    </div>
                    <span class="tracking-wide text-sm md:text-xl">TARIK MASUK JEMURAN</span>
@@ -251,6 +255,9 @@ export default {
       displayRain: 0,
       targetLdr: 0,
       targetRain: 0,
+      // Command Queue
+      pendingCommand: null,   // Perintah yang sedang menunggu dieksekusi ESP32
+      isSendingCommand: false,
     }
   },
   computed: {
@@ -305,15 +312,20 @@ export default {
       try {
         const response = await axios.get('/api/dashboard-data');
         if(response.data) {
-          this.settings = response.data.setting;
-          this.latestData = response.data.latestData || {};
+          this.settings    = response.data.setting;
+          this.latestData  = response.data.latestData || {};
           this.historyData = response.data.history || [];
-          this.isLoading = false;
+          this.isLoading   = false;
+
+          // Sinkronisasi status pending command dari server
+          this.pendingCommand = response.data.pendingCommand || null;
+          // Jika tidak ada pending command lagi → command sudah dieksekusi ESP32
+          if (!this.pendingCommand) this.isSendingCommand = false;
 
           // Animate counters
-          const newLdr = this.latestData.ldr_value || 0;
+          const newLdr  = this.latestData.ldr_value || 0;
           const newRain = this.latestData.rain_percentage || 0;
-          if (newLdr !== this.targetLdr) { this.targetLdr = newLdr; this.animateCounter('displayLdr', newLdr); }
+          if (newLdr  !== this.targetLdr)  { this.targetLdr  = newLdr;  this.animateCounter('displayLdr',  newLdr);  }
           if (newRain !== this.targetRain) { this.targetRain = newRain; this.animateCounter('displayRain', newRain); }
 
           // Update chart
@@ -440,16 +452,36 @@ export default {
       });
       this.fetchData();
     },
-    async setManualPosition(position) {
-      if (this.settings.is_auto_mode) return;
-      this.settings.manual_position = position;
-      await axios.post('/api/update-setting', { manual_position: position });
-      this.$emit('toast', {
-        type: 'success',
-        title: 'Eksekusi Diterima',
-        message: `Memindahkan rel jemuran ke posisi: ${position}`
-      });
-      this.fetchData();
+    /**
+     * Push perintah ke command queue — ESP32 akan eksekusi dalam ≤10 detik.
+     * Jauh lebih responsif dari sebelumnya (dulu harus tunggu interval polling).
+     */
+    async pushCommand(action) {
+      if (this.settings.is_auto_mode || this.isSendingCommand) return;
+      this.isSendingCommand = true;
+
+      const labels = {
+        move_out: 'Keluarkan Jemuran',
+        move_in:  'Tarik Masuk Jemuran',
+      };
+
+      try {
+        await axios.post('/api/device/command', { command: action });
+        this.$emit('toast', {
+          type: 'info',
+          title: '📡 Perintah Dikirim',
+          message: `Perintah "${labels[action]}" sedang menunggu ESP32. Akan dieksekusi dalam ≤10 detik.`
+        });
+        // Segera refresh untuk tampilkan badge "Mengirim perintah..."
+        this.fetchData();
+      } catch (error) {
+        this.isSendingCommand = false;
+        this.$emit('toast', {
+          type: 'error',
+          title: 'Gagal Kirim Perintah',
+          message: 'Tidak dapat menghubungi server. Cek koneksi Anda.'
+        });
+      }
     }
   }
 }

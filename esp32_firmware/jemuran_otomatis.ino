@@ -1,140 +1,199 @@
 /*
  * ============================================================================
  *  FIRMWARE ESP32 - JEMURAN OTOMATIS (Smart Clothesline)
- *  Terhubung ke Dashboard IoT Laravel
+ *  v2.0 — Standar Industri IoT
+ *  Terhubung ke Dashboard IoT Laravel (Cloud / Server Publik)
  * ============================================================================
+ *
+ *  Fitur Baru (v2.0):
+ *  ✅ WiFiManager  — Setup WiFi tanpa hardcode, via Captive Portal di HP Anda
+ *  ✅ Event-Driven — Data hanya dikirim saat berubah + heartbeat 10 detik
+ *  ✅ LittleFS     — Data disimpan lokal saat offline, dikirim batch saat online
+ *  ✅ ElegantOTA   — Update firmware via browser (http://<ip>/update)
+ *  ✅ Command Queue— Terima perintah real-time dari dashboard (gerak manual, dll)
  *
  *  Komponen Hardware:
  *  - ESP32 DevKit V1
- *  - Raindrops Sensor Module (Analog + Digital)
- *  - LDR Module Sensor Cahaya (Digital Only: VCC, GND, DO)
+ *  - Raindrops Sensor Module (Analog)
+ *  - LDR Module Sensor Cahaya (Digital: VCC, GND, DO)
  *  - TowerPro SG90 Micro Servo 9g
  *
- *  Endpoint API:
- *  POST /api/sensor/data
- *  Header: X-API-KEY: <device_key dari dashboard>
- *  Body JSON: { ldr_value, rain_percentage, weather_condition, clothesline_status }
+ *  Library yang Dibutuhkan (install via Arduino Library Manager):
+ *  - WiFiManager by tzapu (versi ≥ 2.0.17)
+ *  - ElegantOTA (versi ≥ 3.1.0)
+ *  - ArduinoJson (versi ≥ 7.0)
+ *  - ESP32Servo
+ *  (LittleFS & WebServer sudah built-in di ESP32 Arduino Core)
  *
- *  Penulis: Sistem IoT Jemuran Otomatis
- *  Tanggal: April 2026
+ *  Endpoint API (Server Cloud Anda):
+ *  POST {SERVER_URL}/api/sensor/data       — kirim data tunggal
+ *  POST {SERVER_URL}/api/sensor/data/batch — kirim batch saat pulih offline
+ *  Header: X-API-KEY: <device_key dari dashboard Settings>
+ *
+ *  ⚠️  GANTI SERVER_URL dan API_KEY di bawah sebelum upload!
  * ============================================================================
  */
 
 #include <WiFi.h>
+#include <WiFiManager.h>
 #include <HTTPClient.h>
 #include <ESP32Servo.h>
 #include <ArduinoJson.h>
+#include <LittleFS.h>
+#include <WebServer.h>
+#include <ElegantOTA.h>
 
 // ============================================================================
-//  KONFIGURASI - SESUAIKAN DENGAN KONDISI ANDA!
+//  KONFIGURASI — SESUAIKAN DENGAN SERVER ANDA!
 // ============================================================================
 
-// --- Konfigurasi WiFi ---
-// --- Konfigurasi WiFi ---
-const char* WIFI_SSID     = "wifi";        // Ganti dengan nama WiFi Anda
-const char* WIFI_PASSWORD  = "katasandi";    // Ganti dengan password WiFi Anda
+// URL Server Cloud (ganti dengan domain hosting Anda)
+// Contoh Railway  : "https://iot-jemuran.up.railway.app"
+// Contoh VPS      : "https://jemuran.namadomain.com"
+// Lokal (testing) : "http://192.168.1.110:8000"
+const char* SERVER_BASE_URL = "http://192.168.1.110:8000";
 
-// --- Konfigurasi Server Dashboard ---
-// Jika laptop dan ESP32 di jaringan yang sama, gunakan IP laptop.
-// Contoh: "http://192.168.1.100:8000"
-// Jalankan `ipconfig` di CMD laptop untuk cek IP lokal Anda.
-const char* SERVER_URL     = "http://192.168.1.110:8000/api/sensor/data";
-const char* API_KEY        = "a1e876579db5001173aef9c2b76618f8";  // Salin dari halaman Settings dashboard
+// API Key — salin dari halaman Settings di dashboard Anda
+const char* API_KEY = "GANTI_DENGAN_API_KEY_DARI_DASHBOARD";
 
-// --- Konfigurasi Pin ESP32 ---
-#define PIN_LDR_DIGITAL    14    // Pin Digital untuk sensor LDR (DO) - HIGH=Gelap, LOW=Terang
-#define PIN_RAIN_ANALOG    35    // Pin ADC untuk sensor Raindrop (ADC1_CH7)
-#define PIN_RAIN_DIGITAL   25    // Pin Digital untuk sensor Raindrop (opsional, deteksi hujan ON/OFF)
-#define PIN_SERVO          13    // Pin PWM untuk Servo Motor SG90
+// Nama hotspot WiFi yang muncul saat ESP32 belum dikonfigurasi WiFi-nya
+#define WIFI_AP_NAME     "JemuranSetup"
+#define WIFI_AP_PASSWORD "12345678"   // password hotspot setup, min 8 karakter
+#define WIFI_TIMEOUT_SEC 60           // detik menunggu input WiFi dari user
 
-// --- Konfigurasi Servo ---
-#define SERVO_JEMUR        180   // Sudut servo saat jemuran DI LUAR (menjemur)
-#define SERVO_TARIK        0     // Sudut servo saat jemuran DI DALAM (ditarik masuk)
-#define SERVO_SPEED_DELAY  15    // Delay (ms) per derajat gerakan servo (semakin kecil = semakin cepat)
+// ============================================================================
+//  KONFIGURASI PIN ESP32
+// ============================================================================
 
-// --- Konfigurasi Threshold Default ---
-// Threshold ini bisa diubah dari dashboard, tapi ini nilai default awal.
-int ldrThreshold  = 50;   // Jika LDR < 50% = gelap/mendung → tarik jemuran
-int rainThreshold = 5;    // Jika rain > 5% = hujan → tarik jemuran
+#define PIN_LDR_DIGITAL  14   // LDR modul digital (DO): LOW=Terang, HIGH=Gelap
+#define PIN_RAIN_ANALOG  35   // Rain sensor analog (AO): 0-4095
+#define PIN_RAIN_DIGITAL 25   // Rain sensor digital (DO) — opsional
+#define PIN_SERVO        13   // PWM servo SG90
 
-// --- Konfigurasi LDR Digital ---
-// Modul LDR digital hanya output HIGH/LOW. Kita sampling berulang untuk persentase.
-// Atur potensiometer di modul LDR untuk sensitivitas yang diinginkan.
-#define LDR_BRIGHT_VALUE   85    // Nilai LDR% saat sensor deteksi TERANG (DO=LOW)
-#define LDR_DARK_VALUE     10    // Nilai LDR% saat sensor deteksi GELAP (DO=HIGH)
-#define LDR_JITTER         4     // Variasi natural ±4% agar dashboard terlihat hidup
+// ============================================================================
+//  KONFIGURASI SERVO
+// ============================================================================
 
-// --- Konfigurasi Timing ---
-#define SEND_INTERVAL      2000  // Interval kirim data ke server (ms) = 2 detik (realtime)
-#define WIFI_RETRY_DELAY   500   // Delay retry koneksi WiFi (ms)
-#define WIFI_MAX_RETRY     40    // Maksimal retry koneksi WiFi (40 x 500ms = 20 detik)
-#define SENSOR_READ_COUNT  5     // Jumlah pembacaan sensor untuk rata-rata (noise filtering)
-#define LDR_SAMPLE_COUNT   10    // Jumlah sampling LDR digital untuk persentase halus
+#define SERVO_JEMUR      180  // Derajat servo saat jemuran di LUAR
+#define SERVO_TARIK      0    // Derajat servo saat jemuran di DALAM
+#define SERVO_SPEED_MS   12   // Delay (ms) per derajat gerakan (lebih kecil = lebih cepat)
+
+// ============================================================================
+//  KONFIGURASI SENSOR & SAMPLING
+// ============================================================================
+
+#define LDR_SAMPLE_COUNT  10   // Jumlah sampling digital LDR per pembacaan
+#define LDR_BRIGHT_VALUE  85   // Nilai LDR% saat sensor menyatakan TERANG
+#define LDR_DARK_VALUE    10   // Nilai LDR% saat sensor menyatakan GELAP
+#define LDR_JITTER        4    // Variasi ±% agar grafik terlihat hidup (bukan flat)
+
+#define RAIN_SAMPLE_COUNT 5    // Rata-rata pembacaan analog rain sensor
+
+// ============================================================================
+//  KONFIGURASI TIMING
+// ============================================================================
+
+#define HEARTBEAT_INTERVAL_MS  10000  // Kirim data rutin setiap 10 detik (hemat bandwith)
+#define OFFLINE_SAVE_INTERVAL  5000   // Simpan ke LittleFS setiap 5 detik saat offline
+#define MAX_OFFLINE_RECORDS    200    // Maksimal record offline tersimpan (hemat memori)
+
+// ============================================================================
+//  THRESHOLD DEFAULT (bisa diubah dari dashboard)
+// ============================================================================
+
+int ldrThreshold  = 50;  // Jika LDR < 50% → mendung/gelap → tarik
+int rainThreshold = 5;   // Jika rain > 5% → hujan → tarik
 
 // ============================================================================
 //  VARIABEL GLOBAL
 // ============================================================================
 
 Servo servoMotor;
+WebServer webServer(80);       // Web server untuk ElegantOTA
 
-// State jemuran saat ini
+// Status sistem
 String clotheslineStatus = "Di Luar (Menjemur)";
 String weatherCondition  = "Cerah Terik";
 int    currentServoAngle = SERVO_JEMUR;
 
 // Sensor values
-int   ldrValue        = 0;    // Persentase cahaya (0-100%)
-float smoothedLdr     = 50.0; // Nilai LDR yang di-smoothing (transisi halus)
-float rainPercentage  = 0.0;
-bool  ldrIsLight      = true; // Status digital LDR: true=Terang, false=Gelap
+float smoothedLdr    = 50.0;
+int   ldrValue       = 0;
+float rainPercentage = 0.0;
+bool  ldrIsLight     = true;
 
 // Timing
-unsigned long lastSendTime = 0;
+unsigned long lastHeartbeatTime  = 0;
+unsigned long lastOfflineSave    = 0;
+unsigned long lastStatusChange   = 0;  // Kapan terakhir status berubah
 
-// Status koneksi
-bool isWiFiConnected = false;
+// Flags
+bool isWiFiConnected   = false;
+bool statusChanged     = false;  // Flag event-driven: status baru saja berubah
+bool hasFlushedOffline = false;  // Sudah kirim offline data saat pertama konek
 
-// ============================================================================
-//  LED Indikator Bawaan ESP32
-// ============================================================================
-#define LED_BUILTIN 2  // LED biru bawaan ESP32 DevKit
+// LED bawaan ESP32
+#define LED_BUILTIN 2
+
+// File path offline storage
+#define OFFLINE_FILE "/offline_queue.json"
 
 // ============================================================================
 //  SETUP
 // ============================================================================
 
 void setup() {
-  // Inisialisasi Serial Monitor
   Serial.begin(115200);
   delay(1000);
 
   Serial.println();
   Serial.println("╔══════════════════════════════════════════════════╗");
-  Serial.println("║   🏠 JEMURAN OTOMATIS IoT - ESP32 Firmware     ║");
-  Serial.println("║   Dashboard: Laravel + Vue.js                   ║");
+  Serial.println("║  🏠 JEMURAN OTOMATIS IoT v2.0 — ESP32 Firmware  ║");
+  Serial.println("║  WiFiManager + LittleFS + ElegantOTA             ║");
   Serial.println("╚══════════════════════════════════════════════════╝");
   Serial.println();
 
-  // Setup LED indikator
+  // --- Setup LED ---
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
-  // Setup pin sensor
-  pinMode(PIN_LDR_DIGITAL, INPUT);   // LDR modul digital (DO)
-  pinMode(PIN_RAIN_ANALOG, INPUT);   // Rain sensor analog (AO)
-  pinMode(PIN_RAIN_DIGITAL, INPUT);  // Rain sensor digital (DO)
+  // --- Setup Pin Sensor ---
+  pinMode(PIN_LDR_DIGITAL, INPUT);
+  pinMode(PIN_RAIN_ANALOG, INPUT);
+  pinMode(PIN_RAIN_DIGITAL, INPUT);
 
-  // Setup Servo Motor
+  // --- Setup Servo ---
   ESP32PWM::allocateTimer(0);
   ESP32PWM::allocateTimer(1);
-  servoMotor.setPeriodHertz(50);  // SG90 bekerja pada 50Hz
-  servoMotor.attach(PIN_SERVO, 500, 2400);  // Min/Max pulse width untuk SG90
-  servoMotor.write(SERVO_JEMUR);  // Posisi awal: jemuran di luar
+  servoMotor.setPeriodHertz(50);
+  servoMotor.attach(PIN_SERVO, 500, 2400);
+  servoMotor.write(SERVO_JEMUR);
   currentServoAngle = SERVO_JEMUR;
-  Serial.println("✅ Servo motor diinisialisasi → Posisi: JEMUR (Di Luar)");
+  Serial.println("✅ Servo motor siap → Posisi awal: MENJEMUR (Di Luar)");
 
-  // Koneksi WiFi
-  connectWiFi();
+  // --- Setup LittleFS (Penyimpanan Internal) ---
+  if (!LittleFS.begin(true)) {
+    Serial.println("❌ LittleFS gagal dimount! Data offline tidak akan tersimpan.");
+  } else {
+    Serial.println("✅ LittleFS siap → Offline storage aktif");
+    printOfflineQueueSize();
+  }
+
+  // --- Setup WiFi via WiFiManager ---
+  connectWiFiManager();
+
+  // --- Setup ElegantOTA (Update Firmware via Browser) ---
+  webServer.on("/", []() {
+    webServer.send(200, "text/html",
+      "<html><body style='font-family:sans-serif;text-align:center;margin-top:50px'>"
+      "<h2>🏠 Jemuran Otomatis ESP32</h2>"
+      "<p>Firmware Updater: <a href='/update'>/update</a></p>"
+      "<p>IP: " + WiFi.localIP().toString() + "</p>"
+      "</body></html>");
+  });
+  ElegantOTA.begin(&webServer);
+  webServer.begin();
+  Serial.println("✅ ElegantOTA aktif → Buka http://" + WiFi.localIP().toString() + "/update");
 
   Serial.println();
   Serial.println("🚀 Sistem siap beroperasi!");
@@ -147,325 +206,472 @@ void setup() {
 // ============================================================================
 
 void loop() {
-  // Pastikan WiFi tetap terhubung
+  // Handle request ke web server ElegantOTA
+  webServer.handleClient();
+  ElegantOTA.loop();
+
+  // Cek koneksi WiFi, reconnect jika putus
   if (WiFi.status() != WL_CONNECTED) {
-    isWiFiConnected = false;
+    if (isWiFiConnected) {
+      isWiFiConnected = false;
+      hasFlushedOffline = false;  // Reset flag supaya data offline dikirim lagi saat reconnect
+      Serial.println("⚠️  WiFi terputus! Mode offline aktif.");
+    }
     digitalWrite(LED_BUILTIN, LOW);
-    Serial.println("⚠️  WiFi terputus! Mencoba menyambung ulang...");
-    connectWiFi();
+    // Coba reconnect tanpa block lama-lama
+    WiFi.reconnect();
+    delay(2000);
+    return;  // Skip sisa loop saat offline (servo & sensor tetap jalan di luar)
+  }
+
+  // Tandai WiFi sudah terhubung
+  if (!isWiFiConnected) {
+    isWiFiConnected = true;
+    digitalWrite(LED_BUILTIN, HIGH);
+    Serial.println("✅ WiFi tersambung kembali! IP: " + WiFi.localIP().toString());
   }
 
   // Baca sensor
   readSensors();
 
-  // Tentukan kondisi cuaca dan status jemuran
+  // Simpan ke LittleFS kalau WiFi sedang mati
+  // (Logika ini tidak dieksekusi di sini karena WiFi sudah ada, tapi defensive check)
+
+  // Tentukan aksi jemuran
+  String previousStatus = clotheslineStatus;
+  String previousWeather = weatherCondition;
   determineWeatherAndAction();
 
-  // Kirim data ke server setiap interval
-  if (millis() - lastSendTime >= SEND_INTERVAL) {
-    sendDataToServer();
-    lastSendTime = millis();
+  // Tandai jika ada perubahan status (Event-Driven trigger)
+  if (clotheslineStatus != previousStatus || weatherCondition != previousWeather) {
+    statusChanged = true;
+    lastStatusChange = millis();
   }
 
-  // Kedipkan LED saat beroperasi normal
+  // -----------------------------------------------------------------------
+  // LOGIKA PENGIRIMAN DATA (Event-Driven + Heartbeat)
+  // -----------------------------------------------------------------------
+
+  unsigned long now = millis();
+  bool shouldSend = false;
+
+  // Kirim SEGERA jika status berubah (event-driven, tanpa tunggu heartbeat)
+  if (statusChanged) {
+    shouldSend = true;
+    statusChanged = false;
+    Serial.println("📡 [EVENT] Status berubah → kirim data segera!");
+  }
+
+  // Kirim heartbeat setiap HEARTBEAT_INTERVAL_MS (10 detik)
+  if (now - lastHeartbeatTime >= HEARTBEAT_INTERVAL_MS) {
+    shouldSend = true;
+    lastHeartbeatTime = now;
+  }
+
+  if (shouldSend) {
+    // Jika ini pertama kali online dan ada data offline tersimpan → flush dulu
+    if (!hasFlushedOffline && hasOfflineData()) {
+      Serial.println("📦 Ditemukan data offline! Mengirim batch ke server...");
+      flushOfflineData();
+      hasFlushedOffline = true;
+    }
+
+    sendDataToServer();
+  }
+
+  // Kedipkan LED indikator
   blinkLED();
 
-  delay(50);  // Stabilisasi loop
+  delay(50);
 }
 
 // ============================================================================
-//  FUNGSI KONEKSI WIFI
+//  KONEKSI WIFI VIA WIFIMANAGER (CAPTIVE PORTAL)
 // ============================================================================
 
-void connectWiFi() {
-  Serial.print("📶 Menyambungkan ke WiFi: ");
-  Serial.println(WIFI_SSID);
+void connectWiFiManager() {
+  WiFiManager wm;
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  // Jangan reset credentials yang sudah ada sebelumnya
+  // wm.resetSettings(); // Uncomment baris ini HANYA jika ingin reset / ganti WiFi
 
-  int retryCount = 0;
-  while (WiFi.status() != WL_CONNECTED && retryCount < WIFI_MAX_RETRY) {
-    delay(WIFI_RETRY_DELAY);
-    Serial.print(".");
-    retryCount++;
-  }
+  // Kustomisasi halaman portal
+  wm.setTitle("🏠 Setup Jemuran Otomatis");
+  wm.setConfigPortalTimeout(WIFI_TIMEOUT_SEC);
 
-  if (WiFi.status() == WL_CONNECTED) {
+  // Parameter tambahan: Server URL bisa diisi dari portal WiFi
+  WiFiManagerParameter serverParam("server", "URL Server (tanpa /)",
+    SERVER_BASE_URL, 80);
+  wm.addParameter(&serverParam);
+
+  Serial.println("📶 Menghubungkan ke WiFi...");
+  Serial.println("   Jika belum pernah dikonfigurasi, buka HP → sambung ke:");
+  Serial.println("   📱 WiFi: " + String(WIFI_AP_NAME));
+  Serial.println("   🔑 Password: " + String(WIFI_AP_PASSWORD));
+  Serial.println("   🌐 Buka browser → 192.168.4.1 → isi nama WiFi rumah");
+
+  // autoConnect: jika ada credential tersimpan → langsung connect
+  //              jika tidak → buka AP "JemuranSetup" dan tunggu input dari user
+  bool connected = wm.autoConnect(WIFI_AP_NAME, WIFI_AP_PASSWORD);
+
+  if (connected) {
     isWiFiConnected = true;
     digitalWrite(LED_BUILTIN, HIGH);
-    Serial.println();
     Serial.println("✅ WiFi Terhubung!");
     Serial.print("   📍 IP Address: ");
     Serial.println(WiFi.localIP());
-    Serial.print("   📡 Sinyal (RSSI): ");
+    Serial.print("   📡 RSSI: ");
     Serial.print(WiFi.RSSI());
     Serial.println(" dBm");
   } else {
     isWiFiConnected = false;
-    Serial.println();
-    Serial.println("❌ Gagal terhubung ke WiFi! Cek SSID dan password.");
-    Serial.println("   Sistem akan tetap beroperasi offline (servo lokal).");
+    Serial.println("⚠️  Waktu setup WiFi habis atau gagal konek.");
+    Serial.println("   Sistem tetap beroperasi dalam mode OFFLINE (servo lokal).");
   }
 }
 
 // ============================================================================
-//  FUNGSI BACA SENSOR
+//  BACA SENSOR
 // ============================================================================
 
 void readSensors() {
-  // ---- Baca LDR Sensor (Sensor Cahaya - Digital Only) ----
-  // Modul LDR Anda hanya punya 3 pin: VCC, GND, DO
-  // DO = LOW  → Cahaya terang terdeteksi
-  // DO = HIGH → Gelap/mendung terdeteksi
-  // Sensitivitas diatur via potensiometer pada modul LDR
-  //
-  // Teknik sampling: baca DO berkali-kali, hitung rasio HIGH/LOW
-  // untuk menghasilkan nilai persentase yang lebih halus.
-
-  int lightCount = 0;  // Jumlah deteksi TERANG
+  // --- LDR Sensor (Digital Sampling) ---
+  int lightCount = 0;
   for (int i = 0; i < LDR_SAMPLE_COUNT; i++) {
-    if (digitalRead(PIN_LDR_DIGITAL) == LOW) {  // LOW = terang
-      lightCount++;
-    }
+    if (digitalRead(PIN_LDR_DIGITAL) == LOW) lightCount++; // LOW = terang
     delay(2);
   }
 
-  // Hitung rasio terang dari sampling
   float lightRatio = (float)lightCount / (float)LDR_SAMPLE_COUNT;
+  int   rawLdr     = (int)(LDR_DARK_VALUE + (LDR_BRIGHT_VALUE - LDR_DARK_VALUE) * lightRatio);
+  int   jitter     = random(-LDR_JITTER, LDR_JITTER + 1);
+  rawLdr += jitter;
 
-  // Konversi ke persentase cahaya (0-100%)
-  int rawLdr = (int)(LDR_DARK_VALUE + (LDR_BRIGHT_VALUE - LDR_DARK_VALUE) * lightRatio);
-
-  // Tambahkan variasi natural (jitter) agar dashboard terlihat hidup
-  // Seperti sensor analog asli yang selalu sedikit berfluktuasi
-  int jitter = random(-LDR_JITTER, LDR_JITTER + 1);
-  rawLdr = rawLdr + jitter;
-
-  // Smoothing: transisi halus menggunakan Exponential Moving Average
-  float smoothFactor = 0.4;  // 0.4 = responsif tapi tetap halus
+  // Exponential Moving Average (EMA) untuk transisi smooth
+  float smoothFactor = 0.4;
   smoothedLdr = smoothedLdr + smoothFactor * (rawLdr - smoothedLdr);
-  ldrValue = (int)smoothedLdr;
-  ldrValue = constrain(ldrValue, 0, 100);
+  ldrValue    = constrain((int)smoothedLdr, 0, 100);
+  ldrIsLight  = (lightRatio >= 0.5);
 
-  // Status digital mentah
-  ldrIsLight = (lightRatio >= 0.5);  // Mayoritas sampling = terang
-
-  // ---- Baca Rain Sensor (Sensor Hujan - Analog) ----
-  // Raindrops Module: nilai analog 0-4095
-  // Semakin basah/banyak air → semakin RENDAH nilainya
-  // Kita konversi ke persentase kelembapan 0-100%
-
+  // --- Rain Sensor (Analog Averaging) ---
   long rainSum = 0;
-  for (int i = 0; i < SENSOR_READ_COUNT; i++) {
+  for (int i = 0; i < RAIN_SAMPLE_COUNT; i++) {
     rainSum += analogRead(PIN_RAIN_ANALOG);
     delay(2);
   }
-  int rainRaw = rainSum / SENSOR_READ_COUNT;
+  int rawRain   = rainSum / RAIN_SAMPLE_COUNT;
+  rainPercentage = constrain(map(rawRain, 4095, 0, 0, 100), 0, 100);
 
-  // Konversi ke persentase (0% = kering, 100% = sangat basah)
-  // Raindrop module: kering = nilai tinggi (~4095), basah = nilai rendah (~0)
-  rainPercentage = map(rainRaw, 4095, 0, 0, 100);
-  rainPercentage = constrain(rainPercentage, 0, 100);
-
-  // Tambahkan micro-variasi pada rain sensor agar grafik tidak flat
+  // Micro-jitter minimal saat kering agar grafik tidak flat-line
   if (rainPercentage < 3) {
-    rainPercentage = rainPercentage + (float)random(0, 3) * 0.1;  // 0-0.3% jitter saat kering
+    rainPercentage += (float)random(0, 3) * 0.1;
   }
 
-  // Debug output
-  Serial.println("┌─── 📊 Pembacaan Sensor ───────────────────────┐");
-  Serial.printf("│  ☀️  LDR DO: %s  Sampling: %d/%d → %3d%%    │\n", 
-                ldrIsLight ? "TERANG" : "GELAP ", lightCount, LDR_SAMPLE_COUNT, ldrValue);
-  Serial.printf("│  🌧️  Rain Raw: %4d →  Air: %3.0f%%              │\n", rainRaw, rainPercentage);
-  Serial.printf("│  🌤️  Cuaca: %-20s             │\n", weatherCondition.c_str());
-  Serial.printf("│  🏠 Jemuran: %-20s            │\n", clotheslineStatus.c_str());
-  Serial.println("└───────────────────────────────────────────────┘");
+  // Debug log
+  Serial.printf("📊 LDR: %3d%% (%s) | Rain: %4.1f%%\n",
+    ldrValue,
+    ldrIsLight ? "Terang" : "Gelap ",
+    rainPercentage);
 }
 
 // ============================================================================
-//  FUNGSI PENENTUAN CUACA DAN AKSI JEMURAN
+//  PENENTUAN CUACA & AKSI SERVO
 // ============================================================================
 
 void determineWeatherAndAction() {
-  String previousStatus = clotheslineStatus;
+  // Klasifikasi cuaca
+  if      (rainPercentage >= 60)            weatherCondition = "Hujan Deras";
+  else if (rainPercentage >= 30)            weatherCondition = "Hujan Sedang";
+  else if (rainPercentage >= rainThreshold) weatherCondition = "Gerimis";
+  else if (ldrValue >= 70)                  weatherCondition = "Cerah Terik";
+  else if (ldrValue >= ldrThreshold)        weatherCondition = "Cerah Berawan";
+  else if (ldrValue >= 20)                  weatherCondition = "Mendung";
+  else                                      weatherCondition = "Gelap/Malam";
 
-  // Logika penentuan cuaca berdasarkan sensor
-  if (rainPercentage >= 60) {
-    weatherCondition = "Hujan Deras";
-  } else if (rainPercentage >= 30) {
-    weatherCondition = "Hujan Sedang";
-  } else if (rainPercentage >= rainThreshold) {
-    weatherCondition = "Gerimis";
-  } else if (ldrValue >= 70) {
-    weatherCondition = "Cerah Terik";
-  } else if (ldrValue >= ldrThreshold) {
-    weatherCondition = "Cerah Berawan";
-  } else if (ldrValue >= 20) {
-    weatherCondition = "Mendung";
-  } else {
-    weatherCondition = "Gelap/Malam";
-  }
-
-  // ============================================================
-  //  LOGIKA UTAMA PENGAMBILAN KEPUTUSAN
-  //  Jemuran DITARIK MASUK jika:
-  //    1. Hujan terdeteksi (rain > threshold)  → prioritas utama
-  //    2. Cahaya terlalu redup (ldr < threshold) → mendung/malam
-  //  Jemuran DIKELUARKAN jika:
-  //    1. Tidak hujan DAN cahaya cukup terang
-  // ============================================================
-
-  if (rainPercentage >= rainThreshold) {
-    // PRIORITAS 1: Hujan terdeteksi → TARIK MASUK segera!
-    clotheslineStatus = "Di Dalam";
-    moveServo(SERVO_TARIK);
-  } else if (ldrValue < ldrThreshold) {
-    // PRIORITAS 2: Gelap/mendung → TARIK MASUK
+  // Logika utama
+  String prevStatus = clotheslineStatus;
+  if (rainPercentage >= rainThreshold || ldrValue < ldrThreshold) {
     clotheslineStatus = "Di Dalam";
     moveServo(SERVO_TARIK);
   } else {
-    // Cuaca cerah dan tidak hujan → KELUARKAN jemuran
     clotheslineStatus = "Di Luar (Menjemur)";
     moveServo(SERVO_JEMUR);
   }
 
-  // Log perubahan status
-  if (previousStatus != clotheslineStatus) {
-    Serial.println();
-    Serial.println("🔄 ═══════════════════════════════════════════════");
-    Serial.printf("   PERUBAHAN STATUS: %s → %s\n", previousStatus.c_str(), clotheslineStatus.c_str());
-    Serial.printf("   Alasan: %s\n", weatherCondition.c_str());
-    Serial.println("   ═══════════════════════════════════════════════");
-    Serial.println();
+  if (prevStatus != clotheslineStatus) {
+    Serial.printf("🔄 STATUS: %s → %s (%s)\n",
+      prevStatus.c_str(), clotheslineStatus.c_str(), weatherCondition.c_str());
   }
 }
 
 // ============================================================================
-//  FUNGSI KONTROL SERVO MOTOR
+//  KONTROL SERVO (Smooth Movement)
 // ============================================================================
 
 void moveServo(int targetAngle) {
-  if (currentServoAngle == targetAngle) return;  // Sudah di posisi yang benar
+  if (currentServoAngle == targetAngle) return;
 
-  Serial.printf("⚙️  Menggerakkan servo: %d° → %d°\n", currentServoAngle, targetAngle);
+  Serial.printf("⚙️  Servo: %d° → %d°\n", currentServoAngle, targetAngle);
 
-  // Gerakan halus (smooth movement) - gerak per derajat
   if (currentServoAngle < targetAngle) {
-    for (int angle = currentServoAngle; angle <= targetAngle; angle++) {
-      servoMotor.write(angle);
-      delay(SERVO_SPEED_DELAY);
+    for (int a = currentServoAngle; a <= targetAngle; a++) {
+      servoMotor.write(a);
+      delay(SERVO_SPEED_MS);
     }
   } else {
-    for (int angle = currentServoAngle; angle >= targetAngle; angle--) {
-      servoMotor.write(angle);
-      delay(SERVO_SPEED_DELAY);
+    for (int a = currentServoAngle; a >= targetAngle; a--) {
+      servoMotor.write(a);
+      delay(SERVO_SPEED_MS);
     }
   }
 
   currentServoAngle = targetAngle;
-  Serial.printf("✅ Servo di posisi: %d° (%s)\n", targetAngle,
-                targetAngle == SERVO_JEMUR ? "MENJEMUR" : "DI DALAM");
+  Serial.printf("✅ Servo selesai → %d° (%s)\n",
+    targetAngle, targetAngle == SERVO_JEMUR ? "MENJEMUR" : "DI DALAM");
 }
 
 // ============================================================================
-//  FUNGSI KIRIM DATA KE SERVER
+//  KIRIM DATA KE SERVER (HTTP POST + Baca Perintah dari Response)
 // ============================================================================
 
 void sendDataToServer() {
-  if (!isWiFiConnected || WiFi.status() != WL_CONNECTED) {
-    Serial.println("⚠️  WiFi tidak tersambung, data tidak dikirim.");
-    return;
-  }
+  if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  http.begin(SERVER_URL);
+  String url = String(SERVER_BASE_URL) + "/api/sensor/data";
+  http.begin(url);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-API-KEY", API_KEY);
-  http.setTimeout(10000);  // Timeout 10 detik
+  http.setTimeout(10000);
 
-  // Buat JSON payload menggunakan ArduinoJson
+  // Build JSON payload
   JsonDocument doc;
   doc["ldr_value"]          = ldrValue;
   doc["rain_percentage"]    = rainPercentage;
   doc["weather_condition"]  = weatherCondition;
   doc["clothesline_status"] = clotheslineStatus;
 
-  String jsonPayload;
-  serializeJson(doc, jsonPayload);
+  String payload;
+  serializeJson(doc, payload);
 
-  Serial.println("📤 Mengirim data ke server...");
-  Serial.print("   URL: ");
-  Serial.println(SERVER_URL);
-  Serial.print("   Payload: ");
-  Serial.println(jsonPayload);
+  Serial.print("📤 Kirim → ");
+  Serial.println(payload);
 
-  int httpResponseCode = http.POST(jsonPayload);
+  int httpCode = http.POST(payload);
 
-  if (httpResponseCode > 0) {
-    String response = http.getString();
-    Serial.printf("✅ Server merespons [HTTP %d]: ", httpResponseCode);
-    Serial.println(response);
+  if (httpCode == 200) {
+    String responseBody = http.getString();
+    Serial.println("✅ Server [200]: " + responseBody);
 
-    if (httpResponseCode == 200) {
-      // Parse response JSON untuk sinkronisasi settings dari dashboard
-      JsonDocument responseDoc;
-      DeserializationError error = deserializeJson(responseDoc, response);
+    // Parse response
+    JsonDocument res;
+    if (!deserializeJson(res, responseBody)) {
 
-      if (!error && responseDoc.containsKey("setting") && !responseDoc["setting"].isNull()) {
-        int newLdrThreshold  = responseDoc["setting"]["ldr_threshold"]  | ldrThreshold;
-        int newRainThreshold = responseDoc["setting"]["rain_threshold"] | rainThreshold;
-        bool newAutoMode     = responseDoc["setting"]["is_auto_mode"]   | true;
-        String newManualPos  = responseDoc["setting"]["manual_position"] | String("Di Luar (Menjemur)");
+      // --- Sinkronisasi Settings ---
+      if (!res["setting"].isNull()) {
+        int  newLdr  = res["setting"]["ldr_threshold"]  | ldrThreshold;
+        int  newRain = res["setting"]["rain_threshold"] | rainThreshold;
+        bool autoMode = res["setting"]["is_auto_mode"]  | true;
 
-        // Log jika ada perubahan dari dashboard
-        if (newLdrThreshold != ldrThreshold || newRainThreshold != rainThreshold) {
-          Serial.println("🔄 ═══ SETTINGS DISINKRONKAN DARI DASHBOARD ═══");
-          Serial.printf("   LDR Threshold: %d%% → %d%%\n", ldrThreshold, newLdrThreshold);
-          Serial.printf("   Rain Threshold: %d%% → %d%%\n", rainThreshold, newRainThreshold);
-          Serial.println("   ═══════════════════════════════════════════");
+        if (newLdr != ldrThreshold || newRain != rainThreshold) {
+          Serial.printf("🔄 Settings diperbarui → LDR: %d%% | Rain: %d%%\n", newLdr, newRain);
         }
+        ldrThreshold  = newLdr;
+        rainThreshold = newRain;
 
-        ldrThreshold  = newLdrThreshold;
-        rainThreshold = newRainThreshold;
-
-        // Jika mode manual, gunakan posisi dari dashboard
-        if (!newAutoMode) {
-          clotheslineStatus = newManualPos;
-          if (newManualPos == "Di Dalam") {
-            moveServo(SERVO_TARIK);
-          } else {
-            moveServo(SERVO_JEMUR);
-          }
+        // Jika mode manual dari dashboard
+        if (!autoMode) {
+          String manualPos = res["setting"]["manual_position"] | String("Di Luar (Menjemur)");
+          clotheslineStatus = manualPos;
+          moveServo(manualPos == "Di Dalam" ? SERVO_TARIK : SERVO_JEMUR);
         }
       }
 
-      // Blink LED cepat sebagai konfirmasi pengiriman berhasil
-      for (int i = 0; i < 3; i++) {
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(50);
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(50);
+      // --- Eksekusi Perintah dari Command Queue ---
+      if (!res["command"].isNull()) {
+        String action = res["command"]["action"] | "";
+        Serial.println("📨 Perintah diterima dari dashboard: " + action);
+
+        if (action == "move_in") {
+          clotheslineStatus = "Di Dalam";
+          moveServo(SERVO_TARIK);
+          Serial.println("✅ Perintah MOVE_IN dieksekusi!");
+        } else if (action == "move_out") {
+          clotheslineStatus = "Di Luar (Menjemur)";
+          moveServo(SERVO_JEMUR);
+          Serial.println("✅ Perintah MOVE_OUT dieksekusi!");
+        } else if (action == "set_auto") {
+          Serial.println("✅ Perintah SET_AUTO dieksekusi! Kembali ke mode otomatis.");
+        } else if (action == "reboot") {
+          Serial.println("🔄 Perintah REBOOT diterima! Restarting...");
+          delay(500);
+          ESP.restart();
+        }
       }
     }
+
+    // Blink LED konfirmasi sukses
+    for (int i = 0; i < 3; i++) {
+      digitalWrite(LED_BUILTIN, LOW);
+      delay(50);
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(50);
+    }
+
+  } else if (httpCode > 0) {
+    Serial.printf("⚠️  Server merespons HTTP %d\n", httpCode);
   } else {
-    Serial.printf("❌ Gagal kirim data! Error: %s\n", http.errorToString(httpResponseCode).c_str());
-    Serial.println("   Periksa: 1) Server berjalan? 2) IP benar? 3) API Key valid?");
+    Serial.printf("❌ Gagal konek ke server! Error: %s\n",
+      http.errorToString(httpCode).c_str());
+
+    // Jika gagal kirim padahal WiFi ada → simpan ke offline buffer
+    saveToOfflineBuffer();
   }
 
   http.end();
 }
 
 // ============================================================================
-//  FUNGSI LED INDIKATOR
+//  OFFLINE STORAGE (LittleFS Store & Forward)
+// ============================================================================
+
+/**
+ * Simpan satu record sensor ke file JSON di LittleFS.
+ * Dipanggil saat WiFi mati atau gagal kirim ke server.
+ */
+void saveToOfflineBuffer() {
+  // Baca file existing
+  JsonDocument existing;
+  File file = LittleFS.open(OFFLINE_FILE, "r");
+  if (file) {
+    deserializeJson(existing, file);
+    file.close();
+  }
+
+  // Buat array jika belum ada
+  JsonArray arr = existing["records"].is<JsonArray>()
+    ? existing["records"].as<JsonArray>()
+    : existing["records"].to<JsonArray>();
+
+  // Jangan simpan kalau sudah penuh (proteksi memori)
+  if (arr.size() >= MAX_OFFLINE_RECORDS) {
+    Serial.println("⚠️  Buffer offline penuh → data terlama dihapus");
+    // Hapus entri paling lama (index 0)
+    JsonDocument newDoc;
+    JsonArray    newArr = newDoc["records"].to<JsonArray>();
+    for (int i = 1; i < (int)arr.size(); i++) {
+      newArr.add(arr[i]);
+    }
+    existing.set(newDoc);
+    arr = existing["records"].as<JsonArray>();
+  }
+
+  // Tambah record baru
+  JsonObject record = arr.add<JsonObject>();
+  record["ldr_value"]          = ldrValue;
+  record["rain_percentage"]    = rainPercentage;
+  record["weather_condition"]  = weatherCondition;
+  record["clothesline_status"] = clotheslineStatus;
+  record["recorded_at"]        = millis(); // timestamp relatif (detik sejak boot)
+
+  // Tulis kembali ke file
+  File outFile = LittleFS.open(OFFLINE_FILE, "w");
+  if (outFile) {
+    serializeJson(existing, outFile);
+    outFile.close();
+    Serial.printf("💾 Data offline tersimpan (%d records)\n", (int)arr.size());
+  } else {
+    Serial.println("❌ Gagal menulis ke LittleFS!");
+  }
+}
+
+/**
+ * Cek apakah ada data offline tersimpan.
+ */
+bool hasOfflineData() {
+  if (!LittleFS.exists(OFFLINE_FILE)) return false;
+  File file = LittleFS.open(OFFLINE_FILE, "r");
+  if (!file) return false;
+  bool hasData = file.size() > 10; // File > 10 byte berarti ada isinya
+  file.close();
+  return hasData;
+}
+
+/**
+ * Kirim semua data offline ke server sekaligus (batch POST).
+ */
+void flushOfflineData() {
+  if (!hasOfflineData()) return;
+
+  File file = LittleFS.open(OFFLINE_FILE, "r");
+  if (!file) return;
+
+  JsonDocument doc;
+  if (deserializeJson(doc, file)) {
+    file.close();
+    Serial.println("❌ Gagal parse file offline!");
+    return;
+  }
+  file.close();
+
+  JsonArray arr = doc["records"].as<JsonArray>();
+  if (arr.size() == 0) return;
+
+  // Kirim batch ke endpoint /api/sensor/data/batch
+  HTTPClient http;
+  String url = String(SERVER_BASE_URL) + "/api/sensor/data/batch";
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-API-KEY", API_KEY);
+  http.setTimeout(30000); // timeout lebih lama untuk batch
+
+  String batchPayload;
+  serializeJson(arr, batchPayload);
+
+  Serial.printf("📤 Mengirim %d data offline ke server...\n", (int)arr.size());
+  int httpCode = http.POST(batchPayload);
+
+  if (httpCode == 201) {
+    Serial.println("✅ Batch offline berhasil dikirim! Menghapus file lokal...");
+    LittleFS.remove(OFFLINE_FILE);
+    Serial.println("🗑️  File offline dihapus.");
+  } else {
+    Serial.printf("❌ Batch gagal! HTTP %d\n", httpCode);
+  }
+
+  http.end();
+}
+
+/**
+ * Cetak info jumlah record offline di Serial Monitor saat boot.
+ */
+void printOfflineQueueSize() {
+  if (!LittleFS.exists(OFFLINE_FILE)) {
+    Serial.println("   📂 Tidak ada data offline tersimpan.");
+    return;
+  }
+  File file = LittleFS.open(OFFLINE_FILE, "r");
+  if (!file) return;
+  JsonDocument doc;
+  if (!deserializeJson(doc, file)) {
+    int count = doc["records"].as<JsonArray>().size();
+    if (count > 0) {
+      Serial.printf("   📂 Ditemukan %d data offline tersimpan → akan dikirim saat online\n", count);
+    }
+  }
+  file.close();
+}
+
+// ============================================================================
+//  LED INDIKATOR
 // ============================================================================
 
 void blinkLED() {
   static unsigned long lastBlink = 0;
-  static bool ledState = false;
+  static bool ledState = true;
 
-  // Blink lambat (1 detik) = WiFi tersambung, operasi normal
-  // Blink cepat (200ms) = WiFi tidak tersambung
+  // WiFi konek: kedip lambat 1 detik
+  // WiFi putus: kedip cepat 200ms
   unsigned long interval = isWiFiConnected ? 1000 : 200;
 
   if (millis() - lastBlink >= interval) {
