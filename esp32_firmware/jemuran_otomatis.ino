@@ -59,7 +59,7 @@ const char* API_KEY = "e6b69b1c94024fbd2b3a047e80cc43c1";
 // Nama hotspot WiFi yang muncul saat ESP32 belum dikonfigurasi WiFi-nya
 #define WIFI_AP_NAME     "JemuranSetup"
 #define WIFI_AP_PASSWORD "12345678"   // password hotspot setup, min 8 karakter
-#define WIFI_TIMEOUT_SEC 60           // detik menunggu input WiFi dari user
+#define WIFI_TIMEOUT_SEC 180          // detik menunggu input WiFi dari user (3 menit)
 
 // ============================================================================
 //  KONFIGURASI PIN ESP32
@@ -115,6 +115,7 @@ WebServer webServer(80);       // Web server untuk ElegantOTA
 String clotheslineStatus = "Di Luar (Menjemur)";
 String weatherCondition  = "Cerah Terik";
 int    currentServoAngle = SERVO_JEMUR;
+bool   isManualMode      = false;
 
 // Sensor values
 float smoothedLdr    = 50.0;
@@ -388,14 +389,17 @@ void determineWeatherAndAction() {
   else if (ldrValue >= 20)                  weatherCondition = "Mendung";
   else                                      weatherCondition = "Gelap/Malam";
 
-  // Logika utama
+  // Logika utama (hanya gerak otomatis jika tidak di mode manual)
   String prevStatus = clotheslineStatus;
-  if (rainPercentage >= rainThreshold || ldrValue < ldrThreshold) {
-    clotheslineStatus = "Di Dalam";
-    moveServo(SERVO_TARIK);
-  } else {
-    clotheslineStatus = "Di Luar (Menjemur)";
-    moveServo(SERVO_JEMUR);
+  
+  if (!isManualMode) {
+    if (rainPercentage >= rainThreshold || ldrValue < ldrThreshold) {
+      clotheslineStatus = "Di Dalam";
+      moveServo(SERVO_TARIK);
+    } else {
+      clotheslineStatus = "Di Luar (Menjemur)";
+      moveServo(SERVO_JEMUR);
+    }
   }
 
   if (prevStatus != clotheslineStatus) {
@@ -479,12 +483,16 @@ void sendDataToServer() {
         }
         ldrThreshold  = newLdr;
         rainThreshold = newRain;
+        // Simpan state manual
+        isManualMode = !autoMode;
 
         // Jika mode manual dari dashboard
-        if (!autoMode) {
+        if (isManualMode) {
           String manualPos = res["setting"]["manual_position"] | String("Di Luar (Menjemur)");
-          clotheslineStatus = manualPos;
-          moveServo(manualPos == "Di Dalam" ? SERVO_TARIK : SERVO_JEMUR);
+          if (clotheslineStatus != manualPos) {
+            clotheslineStatus = manualPos;
+            moveServo(manualPos == "Di Dalam" ? SERVO_TARIK : SERVO_JEMUR);
+          }
         }
       }
 

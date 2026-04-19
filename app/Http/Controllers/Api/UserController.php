@@ -16,8 +16,9 @@ class UserController extends Controller
      */
     public function index()
     {
+        // Gunakan CASE WHEN agar kompatibel MySQL, SQLite, dan PostgreSQL
         $users = User::select('id', 'name', 'email', 'role', 'created_at')
-            ->orderByRaw("FIELD(role, 'admin', 'member')")
+            ->orderByRaw("CASE WHEN role = 'admin' THEN 0 ELSE 1 END")
             ->orderBy('created_at', 'asc')
             ->get();
 

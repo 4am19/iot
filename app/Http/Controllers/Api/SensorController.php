@@ -102,13 +102,19 @@ class SensorController extends Controller
      */
     public function batchStore(Request $request)
     {
+        // Validasi: request harus berupa array langsung (bukan object)
+        // ESP32 mengirim: [{...}, {...}] bukan {"records": [...]}
+        if (!is_array($request->all()) || empty($request->all())) {
+            return response()->json(['error' => 'Format data tidak valid. Harus berupa array.'], 422);
+        }
+
+        // Validasi tiap record dalam array
         $request->validate([
-            '*'                    => 'array',
             '*.ldr_value'          => 'required|numeric',
             '*.rain_percentage'    => 'required|numeric',
-            '*.weather_condition'  => 'required|string',
-            '*.clothesline_status' => 'required|string',
-            '*.recorded_at'        => 'nullable|date',
+            '*.weather_condition'  => 'required|string|max:50',
+            '*.clothesline_status' => 'required|string|max:50',
+            // recorded_at dari ESP32 = millis() (angka integer) → selalu pakai now() saja
         ]);
 
         $records = collect($request->all())->map(function ($item) {
@@ -117,8 +123,9 @@ class SensorController extends Controller
                 'rain_percentage'    => $item['rain_percentage'],
                 'weather_condition'  => $item['weather_condition'],
                 'clothesline_status' => $item['clothesline_status'],
-                // Gunakan timestamp asli saat sensor merekam (bukan saat dikirim)
-                'created_at'         => isset($item['recorded_at']) ? $item['recorded_at'] : now(),
+                // recorded_at dari ESP32 adalah millis() (bukan timestamp),
+                // jadi kita gunakan waktu server saat batch diterima
+                'created_at'         => now(),
                 'updated_at'         => now(),
             ];
         })->toArray();
