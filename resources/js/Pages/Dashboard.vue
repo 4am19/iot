@@ -36,7 +36,7 @@
                   <span>STATUS POSISI AKTUAL</span>
                 </div>
                 
-                <h3 class="text-5xl md:text-7xl font-black mb-4 tracking-tighter text-slate-800 relative inline-block">
+                <h3 class="text-4xl md:text-6xl lg:text-7xl font-black mb-4 tracking-tighter text-slate-800 relative inline-block transition-all duration-300">
                   <span class="bg-clip-text text-transparent bg-gradient-to-r from-slate-800 via-indigo-900 to-slate-800 drop-shadow-sm">
                     {{ settings.is_auto_mode ? latestData.clothesline_status : settings.manual_position || 'Memuat...' }}
                   </span>
@@ -71,7 +71,7 @@
                       :class="clotheslineStatus === 'Di Dalam' ? 'bg-gradient-to-br from-slate-100 to-slate-200 border-4 border-white' : 'bg-gradient-to-br from-yellow-300 to-orange-400 border-4 border-yellow-200'">
                     <span class="transform drop-shadow-2xl hover:scale-110 transition-transform duration-500">{{ clotheslineStatus === 'Di Dalam' ? '☁️' : '☀️' }}</span>
                     <!-- Shine Effect -->
-                    <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/40 to-white/70 opacity-50 pointer-events-none mix-blend-overlay"></div>
+                    <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/40 to-white/70 opacity-50 pointer-events-none mix-blend-overlay z-20"></div>
                  </div>
               </div>
            </div>
@@ -156,7 +156,7 @@
 
                  <!-- Toggle Knob -->
                  <span class="inline-flex h-16 w-16 transform rounded-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] items-center justify-center relative z-10"
-                       :class="settings.is_auto_mode ? 'translate-x-[5.5rem]' : 'translate-x-2'">
+                       :class="settings.is_auto_mode ? 'translate-x-[7rem]' : 'translate-x-2'">
                     <i v-if="settings.is_auto_mode" class="text-emerald-500 text-2xl font-black filter drop-shadow-sm flex items-center h-full not-italic">🤖</i>
                     <i v-else class="text-slate-400 text-2xl font-black filter drop-shadow-sm flex items-center h-full not-italic">✋</i>
                  </span>
@@ -193,23 +193,26 @@
                </div>
              </transition>
              
-             <div class="grid grid-cols-1 gap-5">
+             <!-- Glow Effect container when manual mode -->
+             <div class="grid grid-cols-1 gap-5 relative z-10">
+                <div v-if="!settings.is_auto_mode" class="absolute -inset-4 bg-rose-400/20 blur-2xl rounded-[3rem] animate-pulse pointer-events-none -z-10"></div>
+                
                 <button @click="pushCommand('move_out')" :disabled="settings.is_auto_mode || isSendingCommand"
                         class="relative overflow-hidden w-full py-6 md:py-7 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 font-black text-lg md:text-xl rounded-[1.5rem] shadow-[0_8px_20px_rgba(79,70,229,0.3)] hover:shadow-[0_12px_30px_rgba(79,70,229,0.4)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-4 group">
                    <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-[150%] skew-x-[-20deg] group-hover:animate-shine disabled:hidden"></div>
-                   <div class="w-10 h-10 bg-white/20 rounded-xl group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm">
+                   <div class="w-10 h-10 bg-white/20 rounded-xl group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm shadow-inner border border-white/20">
                       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                    </div>
-                   <span class="tracking-wide text-sm md:text-xl">KELUARKAN JEMURAN</span>
+                   <span class="tracking-wide text-sm md:text-xl drop-shadow-md">KELUARKAN JEMURAN</span>
                 </button>
                 
                 <button @click="pushCommand('move_in')" :disabled="settings.is_auto_mode || isSendingCommand"
                         class="relative overflow-hidden w-full py-6 md:py-7 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 font-black text-lg md:text-xl rounded-[1.5rem] shadow-[0_8px_20px_rgba(244,63,94,0.3)] hover:shadow-[0_12px_30px_rgba(244,63,94,0.4)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-4 group">
                    <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-[150%] skew-x-[-20deg] group-hover:animate-shine disabled:hidden"></div>
-                   <div class="w-10 h-10 bg-white/20 rounded-xl group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm">
+                   <div class="w-10 h-10 bg-white/20 rounded-xl group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm shadow-inner border border-white/20">
                       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                    </div>
-                   <span class="tracking-wide text-sm md:text-xl">TARIK MASUK JEMURAN</span>
+                   <span class="tracking-wide text-sm md:text-xl drop-shadow-md">TARIK MASUK JEMURAN</span>
                 </button>
              </div>
          </div>

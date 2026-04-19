@@ -14,6 +14,8 @@ return new class extends Migration
             $table->integer('ldr_threshold')->default(50); // jika ldr < 50, berarti mendung/gelap
             $table->integer('rain_threshold')->default(5); // % air terdeteksi sebelum bergerak
             $table->string('manual_position')->default('Di Luar (Menjemur)');
+            $table->string('owner_name')->default('Administrator');
+            $table->string('device_key')->nullable();
             $table->timestamps();
         });
     }
