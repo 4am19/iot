@@ -51,10 +51,10 @@
 // Contoh Railway  : "https://iot-jemuran.up.railway.app"
 // Contoh VPS      : "https://jemuran.namadomain.com"
 // Lokal (testing) : "http://192.168.1.110:8000"
-const char* SERVER_BASE_URL = "http://192.168.1.110:8000";
+const char* SERVER_BASE_URL = "https://mya-unsubsidized-fabulously.ngrok-free.dev";
 
 // API Key — salin dari halaman Settings di dashboard Anda
-const char* API_KEY = "GANTI_DENGAN_API_KEY_DARI_DASHBOARD";
+const char* API_KEY = "e6b69b1c94024fbd2b3a047e80cc43c1";
 
 // Nama hotspot WiFi yang muncul saat ESP32 belum dikonfigurasi WiFi-nya
 #define WIFI_AP_NAME     "JemuranSetup"
@@ -442,6 +442,7 @@ void sendDataToServer() {
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-API-KEY", API_KEY);
+  http.addHeader("ngrok-skip-browser-warning", "true"); // Bypass Ngrok interstitial page
   http.setTimeout(10000);
 
   // Build JSON payload
@@ -623,6 +624,7 @@ void flushOfflineData() {
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-API-KEY", API_KEY);
+  http.addHeader("ngrok-skip-browser-warning", "true"); // Bypass Ngrok interstitial page
   http.setTimeout(30000); // timeout lebih lama untuk batch
 
   String batchPayload;
