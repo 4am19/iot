@@ -1,181 +1,234 @@
 <template>
-  <div class="space-y-8">
+  <div class="space-y-8 pb-10 relative">
+    
+    <!-- Loading Skeleton -->
+    <div v-if="isLoading" class="space-y-8 animate-pulse">
+       <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          <div class="xl:col-span-2 bg-white/50 rounded-[2.5rem] h-[340px]"></div>
+          <div class="bg-white/50 rounded-[2.5rem] h-[340px]"></div>
+       </div>
+       <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div class="bg-white/50 rounded-[2rem] h-36" v-for="n in 4" :key="n"></div>
+       </div>
+       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="bg-white/50 rounded-[2.5rem] h-[380px]"></div>
+          <div class="bg-white/50 rounded-[2.5rem] h-[380px]"></div>
+       </div>
+    </div>
+
+    <!-- Interface -->
+    <div v-else class="space-y-8">
+      
+      <!-- Top Row -->
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
         
-        <!-- Loading Skeleton -->
-        <div v-if="isLoading" class="space-y-8 animate-pulse">
-           <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-              <div class="xl:col-span-2 bg-white/50 rounded-[2rem] h-72"></div>
-              <div class="bg-white/50 rounded-[2rem] h-72"></div>
-           </div>
-           <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div class="bg-white/50 rounded-2xl h-32" v-for="n in 4" :key="n"></div>
-           </div>
-           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div class="bg-white/50 rounded-[2rem] h-80"></div>
-              <div class="bg-white/50 rounded-[2rem] h-80"></div>
+        <!-- Hero Banner Glassmorphic -->
+        <div class="xl:col-span-2 relative bg-white/40 backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-12 shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-white overflow-hidden group animation-fade-in transition-all duration-500 hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)]">
+           <!-- Animated background blobs -->
+           <div class="absolute -top-32 -left-32 w-96 h-96 bg-blue-400/20 rounded-full blur-[80px] animate-blob"></div>
+           <div class="absolute top-10 -right-20 w-80 h-80 bg-indigo-400/20 rounded-full blur-[80px] animate-blob animation-delay-2000"></div>
+           <div class="absolute -bottom-40 left-20 w-96 h-96 bg-cyan-300/20 rounded-full blur-[80px] animate-blob animation-delay-4000"></div>
+
+           <div class="flex flex-col md:flex-row items-center gap-10 md:gap-14 relative z-10 w-full justify-between h-full">
+              <div class="w-full text-center md:text-left flex flex-col justify-center">
+                <div class="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-black tracking-[0.2em] mb-6 border border-white/50 shadow-sm text-slate-500 max-w-max mx-auto md:mx-0">
+                  <span class="w-2 h-2 rounded-full" :class="settings.is_auto_mode ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'"></span>
+                  <span>STATUS POSISI AKTUAL</span>
+                </div>
+                
+                <h3 class="text-5xl md:text-7xl font-black mb-4 tracking-tighter text-slate-800 relative inline-block">
+                  <span class="bg-clip-text text-transparent bg-gradient-to-r from-slate-800 via-indigo-900 to-slate-800 drop-shadow-sm">
+                    {{ settings.is_auto_mode ? latestData.clothesline_status : settings.manual_position || 'Memuat...' }}
+                  </span>
+                </h3>
+                
+                <div class="flex items-center justify-center md:justify-start gap-3 mb-8">
+                   <div class="px-3 py-1 bg-slate-100 rounded-lg text-slate-600 text-sm font-bold border border-slate-200 flex items-center gap-2">
+                     <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                     {{ settings.is_auto_mode ? 'Kecerdasan Buatan (Auto)' : 'Manual Override Aktif' }}
+                   </div>
+                </div>
+                
+                <div class="flex justify-center md:justify-start">
+                   <div class="bg-white/80 backdrop-blur-xl px-6 py-4 rounded-2xl border border-white shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex items-center gap-4 group-hover:scale-105 transition-transform duration-500">
+                      <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-2xl shadow-inner border border-indigo-100/50">
+                        {{ latestData.weather_condition === 'Hujan' ? '🌧️' : latestData.weather_condition === 'Cerah' ? '☀️' : '⛅' }}
+                      </div>
+                      <div>
+                         <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5">Prediksi Cuaca</p>
+                         <p class="text-xl font-extrabold tracking-tight text-slate-700">{{ latestData.weather_condition || 'Memuat...' }}</p>
+                      </div>
+                   </div>
+                </div>
+              </div>
+
+              <!-- 3D Inspired Weather Orb -->
+              <div class="flex-shrink-0 relative group perspective-1000 mt-6 md:mt-0">
+                 <div class="absolute inset-0 rounded-full blur-[50px] animate-pulse transition-colors duration-1000" 
+                      :class="clotheslineStatus === 'Di Dalam' ? 'bg-slate-300' : 'bg-amber-400/80'"></div>
+                 
+                 <div class="w-48 h-48 md:w-56 md:h-56 rounded-full relative transform-style-3d transition-transform duration-1000 hover:rotate-y-12 hover:rotate-x-12 z-10 flex items-center justify-center text-8xl md:text-9xl shadow-2xl"
+                      :class="clotheslineStatus === 'Di Dalam' ? 'bg-gradient-to-br from-slate-100 to-slate-200 border-4 border-white' : 'bg-gradient-to-br from-yellow-300 to-orange-400 border-4 border-yellow-200'">
+                    <span class="transform drop-shadow-2xl hover:scale-110 transition-transform duration-500">{{ clotheslineStatus === 'Di Dalam' ? '☁️' : '☀️' }}</span>
+                    <!-- Shine Effect -->
+                    <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/40 to-white/70 opacity-50 pointer-events-none mix-blend-overlay"></div>
+                 </div>
+              </div>
            </div>
         </div>
 
-        <!-- Actual Content -->
-        <template v-else>
-        <!-- Top Row -->
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <!-- Radial Gauges (Sensor Realtime) -->
+        <div class="bg-white/40 backdrop-blur-3xl rounded-[2.5rem] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-white flex flex-col items-center justify-center relative overflow-hidden animation-fade-in delay-100">
+          <h3 class="text-slate-400 font-extrabold text-[11px] uppercase tracking-[0.2em] mb-8 text-center relative z-10 bg-white/50 px-4 py-1.5 rounded-full border border-white/60">Pembacaan Fisik</h3>
           
-          <!-- Hero Banner -->
-          <div class="xl:col-span-2 bg-gradient-to-br from-[#1A365D] via-[#2B6CB0] to-[#3182CE] rounded-[2rem] p-8 md:p-10 text-white shadow-2xl relative overflow-hidden flex flex-col justify-center border border-white/10 group">
-             <div class="absolute top-0 right-0 w-96 h-96 bg-yellow-300 opacity-20 rounded-full -mr-32 -mt-32 blur-[80px] pointer-events-none transition-transform duration-1000 group-hover:scale-110"></div>
-             <div class="absolute bottom-0 left-0 w-64 h-64 bg-blue-300 opacity-10 rounded-full -ml-20 -mb-20 blur-[60px] pointer-events-none"></div>
-
-             <div class="flex flex-col md:flex-row items-center gap-8 md:gap-12 z-10 w-full justify-between relative">
-                <div class="w-full text-center md:text-left">
-                  <div class="bg-white/10 backdrop-blur-md px-5 py-2 rounded-full inline-block text-white text-xs font-bold tracking-widest mb-6 border border-white/20 shadow-lg shadow-black/10 transition-transform hover:-translate-y-0.5">
-                    STATUS AKTUAL
+          <div class="flex flex-col gap-8 w-full justify-center items-center h-full pb-4">
+             
+             <div class="flex w-full justify-around items-center">
+                <!-- Circular LDR Gauge -->
+                <div class="relative flex flex-col items-center group cursor-default">
+                  <svg class="w-32 h-32 md:w-36 md:h-36 transform -rotate-90 drop-shadow-md" viewBox="0 0 100 100">
+                    <!-- Track -->
+                    <circle cx="50" cy="50" r="40" stroke="rgba(245, 158, 11, 0.15)" stroke-width="8" fill="none" class="transition-all duration-300"></circle>
+                    <!-- Progress -->
+                    <circle cx="50" cy="50" r="40" class="text-amber-500 group-hover:text-amber-400 transition-all duration-1000 ease-out" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" :stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * displayLdr / 100)"></circle>
+                  </svg>
+                  <div class="absolute inset-0 flex flex-col items-center justify-center -mt-6">
+                     <span class="text-2xl mt-1 text-amber-500 animate-bounce-slow">☀️</span>
+                     <span class="text-2xl font-black text-slate-700 tracking-tighter relative">{{ displayLdr }}<span class="text-xs font-bold absolute top-1 -right-3">%</span></span>
                   </div>
-                  <h3 class="text-5xl md:text-6xl font-black mb-3 tracking-tighter drop-shadow-md bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">
-                    {{ settings.is_auto_mode ? latestData.clothesline_status : settings.manual_position || 'Memuat...' }}
-                  </h3>
-                  
-                  <div class="flex items-center justify-center md:justify-start gap-4 mb-8">
-                     <span class="relative flex h-3 w-3">
-                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="settings.is_auto_mode ? 'bg-emerald-400' : 'bg-rose-400'"></span>
-                       <span class="relative inline-flex rounded-full h-3 w-3" :class="settings.is_auto_mode ? 'bg-emerald-500' : 'bg-rose-500'"></span>
-                     </span>
-                     <p class="text-blue-100/90 text-sm md:text-base font-semibold tracking-wide">
-                       {{ settings.is_auto_mode ? 'Kecerdasan Buatan (Auto)' : 'Tertahan Mode Manual' }}
-                     </p>
-                  </div>
-                  
-                  <div class="flex gap-6 justify-center md:justify-start bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/10 w-max mx-auto md:mx-0 shadow-inner">
-                     <div>
-                        <p class="text-blue-200/70 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">Cuaca</p>
-                        <p class="text-2xl font-extrabold tracking-tight text-white drop-shadow-sm">{{ latestData.weather_condition || 'Memuat...' }}</p>
-                     </div>
-                  </div>
+                  <span class="mt-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-white/60 px-3 py-1 rounded-lg border border-white">LDR Matahari</span>
                 </div>
 
-                <div class="flex-shrink-0 relative mt-8 md:mt-0">
-                   <div class="absolute inset-0 rounded-full blur-[40px] animate-pulse" :class="clotheslineStatus === 'Di Dalam' ? 'bg-slate-400/50' : 'bg-yellow-400/60'"></div>
-                   
-                   <div :class="clotheslineStatus === 'Di Dalam' ? 'bg-gradient-to-b from-slate-100 to-slate-300 text-slate-700 shadow-[0_10px_30px_rgba(148,163,184,0.6)] border-slate-50' : 'bg-gradient-to-tr from-yellow-300 via-yellow-400 to-orange-400 text-white shadow-[0_10px_40px_rgba(250,204,21,0.6)] border-yellow-200'" 
-                        class="relative w-40 h-40 md:w-44 md:h-44 rounded-full transition-all duration-700 flex items-center justify-center text-7xl md:text-8xl transform hover:scale-110 hover:rotate-6 border-4 z-10 group-hover:shadow-2xl">
-                      {{ clotheslineStatus === 'Di Dalam' ? '☁️' : '☀️' }}
-                   </div>
+                <!-- Circular Rain Gauge -->
+                <div class="relative flex flex-col items-center group cursor-default">
+                  <svg class="w-32 h-32 md:w-36 md:h-36 transform -rotate-90 drop-shadow-md" viewBox="0 0 100 100">
+                    <!-- Track -->
+                    <circle cx="50" cy="50" r="40" stroke="rgba(99, 102, 241, 0.15)" stroke-width="8" fill="none"></circle>
+                    <!-- Progress -->
+                    <circle cx="50" cy="50" r="40" class="text-indigo-500 group-hover:text-indigo-400 transition-all duration-1000 ease-out" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" :stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * displayRain / 100)"></circle>
+                  </svg>
+                  <div class="absolute inset-0 flex flex-col items-center justify-center -mt-6">
+                     <span class="text-2xl mt-1 text-indigo-500 animate-bounce-slow" style="animation-delay: 1s">🌧️</span>
+                     <span class="text-2xl font-black text-slate-700 tracking-tighter relative">{{ displayRain }}<span class="text-xs font-bold absolute top-1 -right-3">%</span></span>
+                  </div>
+                  <span class="mt-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-white/60 px-3 py-1 rounded-lg border border-white">Intensitas Air</span>
                 </div>
              </div>
              
-             <transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 translate-y-4" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-4">
-               <div v-if="!settings.is_auto_mode" class="absolute bottom-6 right-8 bg-rose-500/90 backdrop-blur-md px-5 py-2.5 rounded-2xl text-xs font-black text-white shadow-xl shadow-rose-500/20 border border-rose-400 flex items-center gap-2">
-                  <span class="text-xl animate-bounce">⚠️</span> MANUAL OVERRIDE AKTIF
-               </div>
-             </transition>
           </div>
+        </div>
+      </div>
 
-          <!-- Gauges (Sensor Realtime) -->
-          <div class="bg-white/70 backdrop-blur-xl rounded-[2rem] p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white flex flex-col justify-center relative overflow-hidden group">
-            <div class="absolute inset-0 bg-gradient-to-b from-white/50 to-transparent pointer-events-none"></div>
-            <h3 class="text-slate-400 font-extrabold text-[11px] uppercase tracking-[0.25em] mb-8 text-center relative z-10">Data Sensor Fisik Realtime</h3>
-            
-            <div class="flex flex-col gap-8 items-center w-full relative z-10">
-               <!-- LDR Gauge -->
-               <div class="w-full relative">
-                 <div class="flex justify-between items-end mb-3 px-1">
-                    <span class="font-bold text-slate-700 flex items-center gap-2"><span class="text-2xl drop-shadow-sm">☀️</span> LDR Matahari</span>
-                    <span class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500 tracking-tighter tabular-nums">{{ displayLdr }}<span class="text-lg font-bold">%</span></span>
-                 </div>
-                 <div class="w-full bg-slate-100 h-6 rounded-full overflow-hidden shadow-inner border border-slate-200/50 p-1">
-                    <div class="h-full rounded-full bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 relative transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(251,191,36,0.5)]" :style="{ width: (latestData.ldr_value || 0) + '%' }">
-                       <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHBhdGggZD0iTTAgMjBMMjAgMEwxMCAwTDAgMTB6TTAgMEwyMCAyMEwyMCAxMEwwIDAiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4yIi8+PC9zdmc+')] bg-[length:20px_20px] animate-[slide_1s_linear_infinite]"></div>
-                    </div>
-                 </div>
-               </div>
-               
-               <!-- Rain Gauge -->
-               <div class="w-full relative">
-                 <div class="flex justify-between items-end mb-3 px-1">
-                    <span class="font-bold text-slate-700 flex items-center gap-2"><span class="text-2xl drop-shadow-sm">🌧️</span> Volume Air</span>
-                    <span class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-blue-600 tracking-tighter tabular-nums">{{ displayRain }}<span class="text-lg font-bold">%</span></span>
-                 </div>
-                 <div class="w-full bg-slate-100 h-6 rounded-full overflow-hidden shadow-inner border border-slate-200/50 p-1">
-                    <div class="h-full rounded-full bg-gradient-to-r from-blue-400 via-indigo-500 to-violet-600 relative transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(99,102,241,0.5)]" :style="{ width: (latestData.rain_percentage || 0) + '%' }">
-                       <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHBhdGggZD0iTTAgMjBMMjAgMEwxMCAwTDAgMTB6TTAgMEwyMCAyMEwyMCAxMEwwIDAiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4yIi8+PC9zdmc+')] bg-[length:20px_20px] animate-[slide_1s_linear_infinite]"></div>
-                    </div>
-                 </div>
-               </div>
+      <!-- Summary Stats Row -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+         <div v-for="(stat, index) in summaryStats" :key="stat.label" 
+              class="bg-white/40 backdrop-blur-2xl rounded-[2rem] p-6 border border-white shadow-[0_4px_24px_rgba(0,0,0,0.02)] group hover:-translate-y-2 transition-all duration-500 cursor-default animation-fade-in-up hover:shadow-[0_12px_36px_rgba(0,0,0,0.06)]"
+              :style="{ animationDelay: `${(index + 2) * 100}ms` }">
+            <div class="flex items-center gap-4 mb-4">
+               <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm border group-hover:scale-110 transition-transform duration-300" :class="stat.bgClass">{{ stat.emoji }}</div>
+               <span class="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400 leading-tight">{{ stat.label }}</span>
             </div>
-          </div>
-        </div>
+            <p class="text-4xl md:text-5xl font-black tracking-tighter tabular-nums drop-shadow-sm transition-colors duration-300" :class="stat.valueClass">{{ stat.value }}<span class="text-base font-bold ml-1 opacity-70">{{ stat.unit }}</span></p>
+         </div>
+      </div>
 
-        <!-- Summary Stats Row -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-           <div v-for="stat in summaryStats" :key="stat.label" class="bg-white/70 backdrop-blur-xl rounded-2xl p-5 md:p-6 border border-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] group hover:-translate-y-1 transition-all duration-300 cursor-default">
-              <div class="flex items-center gap-3 mb-3">
-                 <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-sm" :class="stat.bgClass">{{ stat.emoji }}</div>
-                 <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-tight">{{ stat.label }}</span>
-              </div>
-              <p class="text-3xl md:text-4xl font-black tracking-tighter tabular-nums" :class="stat.valueClass">{{ stat.value }}<span class="text-base font-bold ml-0.5">{{ stat.unit }}</span></p>
-           </div>
-        </div>
+      <!-- Chart + Control Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+         
+         <!-- Neumorphic Main Switch -->
+         <div class="bg-white/40 backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-white flex flex-col items-center justify-center min-h-[340px] relative overflow-hidden animation-fade-in-up delay-600 group">
+             <!-- Interactive Glow Background -->
+             <div class="absolute inset-0 transition-opacity duration-700 opacity-20 pointer-events-none"
+                  :class="settings.is_auto_mode ? 'bg-gradient-to-tr from-emerald-300 to-emerald-50' : 'bg-gradient-to-tr from-rose-300 to-rose-50'"></div>
+             
+             <div class="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black tracking-[0.2em] mb-6 border border-white/50 relative z-10 text-slate-500">
+                SISTEM PUSAT
+             </div>
+             
+             <p class="text-center text-sm text-slate-500 mb-10 max-w-sm font-medium relative z-10">Alihkan ke Mode Manual untuk mengambil kendali rel motor secara penuh dari Kecerdasan Buatan.</p>
+             
+             <div class="flex flex-col items-center justify-center relative z-10 w-full">
+               <button @click="toggleAutoMode" 
+                       class="relative flex h-24 w-48 items-center rounded-full transition-all duration-500 focus:outline-none cursor-pointer border-[8px] overflow-hidden hover:scale-105 active:scale-95"
+                       :class="settings.is_auto_mode ? 'bg-emerald-400 border-emerald-100/50 shadow-[inset_0_4px_10px_rgba(0,0,0,0.1),0_0_30px_rgba(16,185,129,0.3)]' : 'bg-slate-200 border-slate-50 shadow-[inset_0_4px_10px_rgba(0,0,0,0.1)]'">
+                 
+                 <div class="absolute inset-0 bg-black/5 opacity-0 hover:opacity-100 transition-opacity pointer-events-none"></div>
 
-        <!-- Chart + Control Row -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           
-           <!-- Real-time Line Chart -->
-           <div class="bg-white/70 backdrop-blur-xl rounded-[2rem] p-6 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white relative overflow-hidden">
-               <div class="flex justify-between items-center mb-6">
-                  <h3 class="text-slate-400 font-extrabold text-[11px] uppercase tracking-[0.25em]">Tren Sensor Real-time</h3>
-                  <span class="text-[10px] bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full font-bold border border-emerald-100">LIVE</span>
-               </div>
-               <div class="relative w-full" style="height: 260px;">
-                  <canvas ref="sensorChart"></canvas>
-               </div>
-           </div>
-
-           <!-- Main Switch -->
-           <div class="bg-white/70 backdrop-blur-xl rounded-[2rem] p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white flex flex-col items-center justify-center min-h-[300px] relative overflow-hidden">
-               <div class="absolute inset-0 bg-blue-50/30"></div>
-               <h3 class="text-slate-400 font-extrabold text-[11px] uppercase tracking-[0.25em] mb-4 relative z-10">Akses AI Induk</h3>
-               <p class="text-center text-sm text-slate-500 mb-10 max-w-sm font-medium relative z-10">Matikan saklar ini jika Anda ingin mengambil alih pergerakan rel motor secara penuh.</p>
+                 <!-- Toggle Knob -->
+                 <span class="inline-flex h-16 w-16 transform rounded-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] items-center justify-center relative z-10"
+                       :class="settings.is_auto_mode ? 'translate-x-[5.5rem]' : 'translate-x-2'">
+                    <i v-if="settings.is_auto_mode" class="text-emerald-500 text-2xl font-black filter drop-shadow-sm flex items-center h-full not-italic">🤖</i>
+                    <i v-else class="text-slate-400 text-2xl font-black filter drop-shadow-sm flex items-center h-full not-italic">✋</i>
+                 </span>
+                 
+                 <!-- Status Text inside Toggle -->
+                 <span class="absolute right-6 font-black text-white/90 text-sm tracking-widest transition-opacity duration-300" :class="settings.is_auto_mode ? 'opacity-100' : 'opacity-0'">AUTO</span>
+                 <span class="absolute left-6 font-black text-slate-400 text-sm tracking-widest transition-opacity duration-300" :class="!settings.is_auto_mode ? 'opacity-100' : 'opacity-0'">MANUAL</span>
+               </button>
                
-               <div class="flex flex-col items-center justify-center relative z-10">
-                 <button @click="toggleAutoMode" 
-                         class="relative inline-flex h-20 w-40 items-center rounded-full transition-all duration-500 focus:outline-none focus:ring-4 focus:ring-offset-4 focus:ring-blue-100 cursor-pointer border-[6px]"
-                         :class="settings.is_auto_mode ? 'bg-emerald-500 border-emerald-100 shadow-[0_0_40px_rgba(16,185,129,0.4)] hover:bg-emerald-400' : 'bg-slate-300 border-slate-100 shadow-inner hover:bg-slate-200'">
-                   <span class="inline-block h-16 w-16 transform rounded-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex items-center justify-center"
-                         :class="settings.is_auto_mode ? 'translate-x-20' : 'translate-x-1'">
-                      <svg v-if="settings.is_auto_mode" class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                      <svg v-else class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
-                   </span>
-                 </button>
-                 <span class="font-black text-2xl tracking-tight mt-6" :class="settings.is_auto_mode ? 'text-emerald-600' : 'text-slate-600'">
-                    {{ settings.is_auto_mode ? '🤖 KENDALI AUTO' : '✋ OVERRIDE MANUAL'}}
+               <div class="mt-8 px-6 py-2 rounded-2xl bg-white/50 border border-white backdrop-blur shadow-sm transition-colors duration-500"
+                    :class="settings.is_auto_mode ? 'text-emerald-600' : 'text-slate-600'">
+                 <span class="font-black text-[1rem] md:text-[1.2rem] tracking-tight"> <!-- fixed sizing to avoid wrap -->
+                    {{ settings.is_auto_mode ? 'KENDALI KECERDASAN BUATAN' : 'PENGENDALIAN MANUAL AKTIF'}}
                  </span>
                </div>
-           </div>
-        </div>
+             </div>
+         </div>
 
-        <!-- Manual Buttons Section -->
-        <div class="bg-white/70 backdrop-blur-xl rounded-[2rem] p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white relative">
-            <h3 class="text-slate-400 font-extrabold text-[11px] uppercase tracking-[0.25em] mb-6 text-center">Eksekusi Rel Motor Manual</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <button @click="setManualPosition('Di Luar (Menjemur)')" :disabled="settings.is_auto_mode" 
-                       class="w-full py-6 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 hover:from-blue-600 hover:to-indigo-800 text-white disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 font-black text-xl rounded-[1.5rem] shadow-xl hover:shadow-blue-500/40 disabled:shadow-inner transition-all duration-300 focus:ring-4 ring-blue-200 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-4 group">
-                  <div class="p-2 bg-white/20 rounded-xl group-hover:scale-110 transition-transform">
-                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                  </div>
-                  <span>KELUARKAN JEMURAN</span>
-               </button>
-               
-               <button @click="setManualPosition('Di Dalam')" :disabled="settings.is_auto_mode" 
-                       class="w-full py-6 bg-gradient-to-br from-rose-500 via-rose-600 to-red-700 hover:from-rose-600 hover:to-red-800 text-white disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 font-black text-xl rounded-[1.5rem] shadow-xl hover:shadow-rose-500/40 disabled:shadow-inner transition-all duration-300 focus:ring-4 ring-rose-200 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-4 group">
-                  <div class="p-2 bg-white/20 rounded-xl group-hover:scale-110 transition-transform">
-                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                  </div>
-                  <span>TARIK MASUK JEMURAN</span>
-               </button>
-            </div>
-        </div>
-        </template>
+         <!-- Manual Control Buttons -->
+         <div class="bg-white/40 backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-white relative flex flex-col justify-center min-h-[340px] animation-fade-in-up delay-700">
+             <div class="flex justify-between items-center mb-8">
+               <h3 class="text-slate-400 font-extrabold text-[11px] uppercase tracking-[0.2em] bg-white/60 px-4 py-1.5 rounded-full border border-white/60">Eksekusi Manual</h3>
+               <span class="relative flex h-3 w-3" v-if="!settings.is_auto_mode">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-rose-400"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+               </span>
+             </div>
+             
+             <div class="grid grid-cols-1 gap-5">
+                <button @click="setManualPosition('Di Luar (Menjemur)')" :disabled="settings.is_auto_mode" 
+                        class="relative overflow-hidden w-full py-6 md:py-7 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 font-black text-lg md:text-xl rounded-[1.5rem] shadow-[0_8px_20px_rgba(79,70,229,0.3)] hover:shadow-[0_12px_30px_rgba(79,70,229,0.4)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-4 group">
+                   <!-- Shine effect -->
+                   <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-[150%] skew-x-[-20deg] group-hover:animate-shine disabled:hidden"></div>
+                   
+                   <div class="w-10 h-10 bg-white/20 rounded-xl group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm disabled:bg-slate-300">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                   </div>
+                   <span class="tracking-wide text-sm md:text-xl">KELUARKAN JEMURAN</span>
+                </button>
+                
+                <button @click="setManualPosition('Di Dalam')" :disabled="settings.is_auto_mode" 
+                        class="relative overflow-hidden w-full py-6 md:py-7 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 font-black text-lg md:text-xl rounded-[1.5rem] shadow-[0_8px_20px_rgba(244,63,94,0.3)] hover:shadow-[0_12px_30px_rgba(244,63,94,0.4)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-4 group">
+                   <!-- Shine effect -->
+                   <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-[150%] skew-x-[-20deg] group-hover:animate-shine disabled:hidden"></div>
+                   
+                   <div class="w-10 h-10 bg-white/20 rounded-xl group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm disabled:bg-slate-300">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                   </div>
+                   <span class="tracking-wide text-sm md:text-xl">TARIK MASUK JEMURAN</span>
+                </button>
+             </div>
+         </div>
+      </div>
 
+      <!-- Live Chart Full Width Row -->
+      <div class="bg-white/50 backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-white relative overflow-hidden animation-fade-in-up delay-800 group hover:shadow-[0_16px_48px_rgba(0,0,0,0.06)] transition-shadow duration-500">
+          <div class="flex justify-between items-center mb-8">
+             <h3 class="text-slate-500 font-extrabold text-[10px] md:text-xs uppercase tracking-[0.2em] flex items-center gap-3">
+               <span class="p-2 bg-indigo-50 text-indigo-500 rounded-xl border border-indigo-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg></span>
+               Grafik Tren Sensor
+             </h3>
+             <span class="text-[9px] md:text-[10px] bg-white border border-slate-200 text-slate-500 px-3 py-1.5 rounded-full font-bold shadow-sm flex items-center gap-2">
+               <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+               REKAM JEJAK
+             </span>
+          </div>
+          <div class="relative w-full rounded-2xl bg-white/30 backdrop-blur-sm p-4 border border-white/40" style="height: 320px;">
+             <canvas ref="sensorChart"></canvas>
+          </div>
+      </div>
+      
+    </div>
   </div>
 </template>
 
@@ -208,10 +261,10 @@ export default {
       const logs = this.historyData;
       if (!logs.length) {
         return [
-          { label: 'Rata-rata LDR', value: '—', unit: '', emoji: '☀️', bgClass: 'bg-amber-50 border border-amber-100', valueClass: 'text-amber-600' },
-          { label: 'Rata-rata Hujan', value: '—', unit: '', emoji: '🌧️', bgClass: 'bg-blue-50 border border-blue-100', valueClass: 'text-blue-600' },
-          { label: 'Total Pergerakan', value: '0', unit: 'kali', emoji: '⚙️', bgClass: 'bg-slate-50 border border-slate-100', valueClass: 'text-slate-700' },
-          { label: 'Evakuasi Darurat', value: '0', unit: 'kali', emoji: '🚨', bgClass: 'bg-rose-50 border border-rose-100', valueClass: 'text-rose-600' },
+          { label: 'Rata-rata LDR', value: '—', unit: '', emoji: '☀️', bgClass: 'bg-amber-50 border-amber-100 text-amber-500', valueClass: 'text-amber-500' },
+          { label: 'Rata-rata Hujan', value: '—', unit: '', emoji: '🌧️', bgClass: 'bg-indigo-50 border-indigo-100 text-indigo-500', valueClass: 'text-indigo-500' },
+          { label: 'Total Pergerakan', value: '0', unit: 'kali', emoji: '⚙️', bgClass: 'bg-slate-50 border-slate-200 text-slate-500', valueClass: 'text-slate-600' },
+          { label: 'Evakuasi Darurat', value: '0', unit: 'kali', emoji: '🚨', bgClass: 'bg-rose-50 border-rose-100 text-rose-500', valueClass: 'text-rose-500' },
         ];
       }
       const avgLdr = Math.round(logs.reduce((a, l) => a + l.ldr_value, 0) / logs.length);
@@ -219,16 +272,16 @@ export default {
       const movements = logs.filter((l, i) => i > 0 && l.clothesline_status !== logs[i-1].clothesline_status).length;
       const emergencies = logs.filter(l => l.weather_condition.toLowerCase().includes('hujan')).length;
       return [
-        { label: 'Rata-rata LDR', value: avgLdr, unit: '%', emoji: '☀️', bgClass: 'bg-amber-50 border border-amber-100', valueClass: 'text-amber-600' },
-        { label: 'Rata-rata Hujan', value: avgRain, unit: '%', emoji: '🌧️', bgClass: 'bg-blue-50 border border-blue-100', valueClass: 'text-blue-600' },
-        { label: 'Total Pergerakan', value: movements, unit: 'kali', emoji: '⚙️', bgClass: 'bg-slate-50 border border-slate-100', valueClass: 'text-slate-700' },
-        { label: 'Evakuasi Darurat', value: emergencies, unit: 'kali', emoji: '🚨', bgClass: 'bg-rose-50 border border-rose-100', valueClass: 'text-rose-600' },
+        { label: 'Rata-rata LDR', value: avgLdr, unit: '%', emoji: '☀️', bgClass: 'bg-amber-50 border-amber-100 text-amber-500', valueClass: 'text-amber-500' },
+        { label: 'Rata-rata Hujan', value: avgRain, unit: '%', emoji: '🌧️', bgClass: 'bg-indigo-50 border-indigo-100 text-indigo-500', valueClass: 'text-indigo-500' },
+        { label: 'Total Pergerakan', value: movements, unit: 'kali', emoji: '⚙️', bgClass: 'bg-slate-50 border-slate-200 text-slate-500', valueClass: 'text-slate-600' },
+        { label: 'Evakuasi Darurat', value: emergencies, unit: 'kali', emoji: '🚨', bgClass: 'bg-rose-50 border-rose-100 text-rose-500', valueClass: 'text-rose-500' },
       ];
     }
   },
   mounted() {
     this.fetchData();
-    this.polling = setInterval(this.fetchData, 2000);
+    this.polling = setInterval(this.fetchData, 3000);
   },
   unmounted() {
     clearInterval(this.polling);
@@ -238,11 +291,11 @@ export default {
     animateCounter(prop, target) {
       const start = this[prop];
       const diff = target - start;
-      const duration = 800;
+      const duration = 1200; // Smoother longer animation
       const startTime = performance.now();
       const step = (timestamp) => {
         const progress = Math.min((timestamp - startTime) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
+        const eased = 1 - Math.pow(1 - progress, 4); // Quartic ease-out
         this[prop] = Math.round(start + diff * eased);
         if (progress < 1) requestAnimationFrame(step);
       };
@@ -289,12 +342,13 @@ export default {
       }
 
       const ctx = canvas.getContext('2d');
-      const ldrGradient = ctx.createLinearGradient(0, 0, 0, 260);
-      ldrGradient.addColorStop(0, 'rgba(251, 191, 36, 0.35)');
-      ldrGradient.addColorStop(1, 'rgba(251, 191, 36, 0.01)');
-      const rainGradient = ctx.createLinearGradient(0, 0, 0, 260);
-      rainGradient.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
-      rainGradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
+      const ldrGradient = ctx.createLinearGradient(0, 0, 0, 300);
+      ldrGradient.addColorStop(0, 'rgba(245, 158, 11, 0.4)');
+      ldrGradient.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      
+      const rainGradient = ctx.createLinearGradient(0, 0, 0, 300);
+      rainGradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+      rainGradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
 
       this.chart = new Chart(ctx, {
         type: 'line',
@@ -302,32 +356,34 @@ export default {
           labels,
           datasets: [
             {
-              label: 'Cahaya LDR (%)',
+              label: 'LDR',
               data: ldrData,
               borderColor: '#f59e0b',
               backgroundColor: ldrGradient,
-              borderWidth: 3,
+              borderWidth: 3.5,
               fill: true,
+              cubicInterpolationMode: 'monotone',
               tension: 0.4,
-              pointBackgroundColor: '#f59e0b',
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2,
-              pointRadius: 5,
-              pointHoverRadius: 8,
+              pointBackgroundColor: '#fff',
+              pointBorderColor: '#f59e0b',
+              pointBorderWidth: 2.5,
+              pointRadius: 4,
+              pointHoverRadius: 7,
             },
             {
-              label: 'Volume Hujan (%)',
+              label: 'Hujan',
               data: rainData,
               borderColor: '#6366f1',
               backgroundColor: rainGradient,
-              borderWidth: 3,
+              borderWidth: 3.5,
               fill: true,
+              cubicInterpolationMode: 'monotone',
               tension: 0.4,
-              pointBackgroundColor: '#6366f1',
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2,
-              pointRadius: 5,
-              pointHoverRadius: 8,
+              pointBackgroundColor: '#fff',
+              pointBorderColor: '#6366f1',
+              pointBorderWidth: 2.5,
+              pointRadius: 4,
+              pointHoverRadius: 7,
             }
           ]
         },
@@ -337,26 +393,38 @@ export default {
           interaction: { intersect: false, mode: 'index' },
           plugins: {
             legend: {
-              position: 'bottom',
-              labels: { usePointStyle: true, padding: 20, font: { weight: 'bold', size: 11 } }
+              position: 'top',
+              align: 'end',
+              labels: { usePointStyle: true, padding: 20, font: { weight: 'bold', size: 12 }, color: '#64748b' }
             },
             tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.9)',
-              titleFont: { weight: 'bold' },
-              bodyFont: { size: 13 },
-              cornerRadius: 12,
-              padding: 14,
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              titleColor: '#0f172a',
+              bodyColor: '#334155',
+              borderColor: 'rgba(226, 232, 240, 1)',
+              borderWidth: 1,
+              titleFont: { weight: 'bold', size: 13 },
+              bodyFont: { weight: 'bold', size: 13 },
+              cornerRadius: 16,
+              padding: 16,
+              boxPadding: 6,
+              usePointStyle: true,
+              callbacks: {
+                label: function(context) { return ` ${context.dataset.label} : ${context.parsed.y}%`; }
+              }
             }
           },
           scales: {
             x: {
               grid: { display: false },
-              ticks: { font: { weight: 'bold', size: 10 }, color: '#94a3b8' }
+              border: { display: false },
+              ticks: { font: { weight: 'bold', size: 11 }, color: '#94a3b8', padding: 10 }
             },
             y: {
               min: 0, max: 100,
-              grid: { color: 'rgba(226,232,240,0.5)' },
-              ticks: { font: { weight: 'bold', size: 10 }, color: '#94a3b8', callback: v => v + '%' }
+              grid: { color: 'rgba(226,232,240,0.6)', borderDash: [4, 4] },
+              border: { display: false },
+              ticks: { font: { weight: 'bold', size: 11 }, color: '#94a3b8', callback: v => v + '%', padding: 10 }
             }
           }
         }
@@ -367,8 +435,8 @@ export default {
       await axios.post('/api/update-setting', { is_auto_mode: this.settings.is_auto_mode });
       this.$emit('toast', {
         type: this.settings.is_auto_mode ? 'success' : 'info',
-        title: this.settings.is_auto_mode ? 'Mode Otomatis Aktif' : 'Manual Override Aktif',
-        message: this.settings.is_auto_mode ? 'AI kini mengendalikan rel motor berdasarkan sensor.' : 'Anda sekarang mengontrol jemuran secara manual.'
+        title: this.settings.is_auto_mode ? 'Kecerdasan Buatan Aktif' : 'Sistem Manual Diambil Alih',
+        message: this.settings.is_auto_mode ? 'AI kini memantau cuaca dan mengendalikan rel motor.' : 'Anda memegang kendali penuh atas posisi jemuran.'
       });
       this.fetchData();
     },
@@ -378,8 +446,8 @@ export default {
       await axios.post('/api/update-setting', { manual_position: position });
       this.$emit('toast', {
         type: 'success',
-        title: 'Perintah Terkirim',
-        message: `Jemuran dipindahkan ke posisi: ${position}`
+        title: 'Eksekusi Diterima',
+        message: `Memindahkan rel jemuran ke posisi: ${position}`
       });
       this.fetchData();
     }
@@ -388,8 +456,63 @@ export default {
 </script>
 
 <style>
-@keyframes slide {
-  0% { background-position: 0 0; }
-  100% { background-position: 20px 20px; }
+/* Custom Keyframes for Premium Polish */
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
 }
+.animate-blob {
+  animation: blob 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(30px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animation-fade-in-up {
+  opacity: 0;
+  animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; transform: scale(0.98); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animation-fade-in {
+  opacity: 0;
+  animation: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shine {
+  100% { transform: translateX(150%) skew(-20deg); }
+}
+.animate-shine {
+  animation: shine 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(-5%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
+  50% { transform: translateY(5%); animation-timing-function: cubic-bezier(0,0,0.2,1); }
+}
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
+}
+
+/* Delays */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-600 { animation-delay: 600ms; }
+.delay-700 { animation-delay: 700ms; }
+.delay-800 { animation-delay: 800ms; }
+
+/* 3D Perspective Utils */
+.perspective-1000 { perspective: 1000px; }
+.transform-style-3d { transform-style: preserve-3d; }
+.rotate-y-12 { transform: rotateY(12deg); }
+.rotate-x-12 { transform: rotateX(12deg); }
 </style>

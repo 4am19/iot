@@ -40,9 +40,18 @@ class SensorController extends Controller
 
         $log = SensorLog::create($validated);
 
+        // Kirim balik pengaturan terbaru ke ESP32 agar threshold selalu sinkron
+        $setting = DeviceSetting::first();
+
         return response()->json([
             'status' => 'success',
-            'data' => $log
+            'data' => $log,
+            'setting' => $setting ? [
+                'is_auto_mode'    => $setting->is_auto_mode,
+                'ldr_threshold'   => $setting->ldr_threshold,
+                'rain_threshold'  => $setting->rain_threshold,
+                'manual_position' => $setting->manual_position,
+            ] : null
         ], 200);
     }
     

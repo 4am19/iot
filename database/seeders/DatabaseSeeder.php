@@ -19,7 +19,8 @@ class DatabaseSeeder extends Seeder
             'is_auto_mode' => true,
             'ldr_threshold' => 50,
             'rain_threshold' => 5,
-            'manual_position' => 'Di Luar (Menjemur)'
+            'manual_position' => 'Di Luar (Menjemur)',
+            'device_key' => bin2hex(random_bytes(16)),  // Auto-generate API Key 32 karakter
         ]);
 
         // 2. Data Dummy Historis untuk Grafik 24 Jam
