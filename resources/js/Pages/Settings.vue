@@ -1,95 +1,95 @@
 <template>
   <div class="max-w-5xl mx-auto space-y-12 pb-12">
      <!-- Header -->
-     <div class="bg-white/60 backdrop-blur-xl p-8 rounded-[2rem] border border-white shadow-sm flex flex-col xl:flex-row gap-6 justify-between items-center relative overflow-hidden">
-        <div class="absolute right-0 top-0 w-64 h-64 bg-blue-100/50 rounded-full blur-[60px] pointer-events-none -mr-10 -mt-10"></div>
+     <div class="bg-white/60 dark:bg-white/[0.04] backdrop-blur-xl p-8 rounded-[2rem] border border-white dark:border-white/10 shadow-sm dark:shadow-none flex flex-col xl:flex-row gap-6 justify-between items-center relative overflow-hidden transition-colors duration-500">
+        <div class="absolute right-0 top-0 w-64 h-64 bg-blue-100/50 dark:bg-indigo-500/10 rounded-full blur-[60px] pointer-events-none -mr-10 -mt-10 transition-colors"></div>
         <div class="relative z-10 text-center xl:text-left flex-1">
-           <h3 class="text-3xl md:text-4xl font-black text-slate-800 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-blue-600">Sistem & Kalibrasi</h3>
-           <p class="text-slate-500 mt-3 font-medium text-lg max-w-xl">Atur identitas sistem dan sensitivitas mata AI secara presisi.</p>
+           <h3 class="text-3xl md:text-4xl font-black text-slate-800 dark:text-slate-100 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-blue-600 dark:from-indigo-300 dark:to-cyan-300 transition-colors">Sistem & Kalibrasi</h3>
+           <p class="text-slate-500 dark:text-slate-400 mt-3 font-medium text-lg max-w-xl transition-colors">Atur identitas sistem dan sensitivitas mata AI secara presisi.</p>
         </div>
 
-        <div class="relative z-10 bg-white/80 p-5 rounded-2xl border border-slate-100 shadow-sm w-full xl:w-auto min-w-[320px]">
-           <label class="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 block">Identitas Administrator</label>
+        <div class="relative z-10 bg-white/80 dark:bg-[#0a0e1a]/50 p-5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm dark:shadow-none w-full xl:w-auto min-w-[320px] transition-colors">
+           <label class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block transition-colors">Identitas Administrator</label>
            <div class="flex gap-2">
-              <input type="text" v-model="settings.owner_name" @blur="saveSettings" @keyup.enter="saveSettings" placeholder="Nama Anda" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all">
-              <button @click="saveSettings" class="bg-blue-50 text-blue-600 px-4 py-2.5 rounded-xl font-black hover:bg-blue-100 transition-colors active:scale-95 shadow-sm border border-blue-100">SIMPAN</button>
+              <input type="text" v-model="settings.owner_name" @blur="saveSettings" @keyup.enter="saveSettings" placeholder="Nama Anda" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-inner dark:shadow-none">
+              <button @click="saveSettings" class="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-4 py-2.5 rounded-xl font-black hover:bg-indigo-100 dark:hover:bg-indigo-500/30 transition-colors active:scale-95 shadow-sm dark:shadow-none border border-indigo-100 dark:border-indigo-500/30">SIMPAN</button>
            </div>
         </div>
      </div>
 
      <!-- Loading Skeleton -->
      <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-pulse">
-        <div class="bg-white/50 rounded-[2.5rem] h-96"></div>
-        <div class="bg-white/50 rounded-[2.5rem] h-96"></div>
+        <div class="bg-white/50 dark:bg-white/[0.04] rounded-[2.5rem] h-96 transition-colors"></div>
+        <div class="bg-white/50 dark:bg-white/[0.04] rounded-[2.5rem] h-96 transition-colors"></div>
      </div>
 
      <template v-else>
      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- LDR Setting -->
-        <div class="bg-white/80 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-white relative overflow-hidden group transition-all hover:shadow-[0_8px_40px_rgba(59,130,246,0.15)] flex flex-col h-full">
-           <div class="absolute top-0 right-0 w-48 h-48 bg-yellow-200 opacity-20 rounded-full -mr-16 -mt-16 blur-2xl transition-transform duration-700 group-hover:scale-125"></div>
+        <div class="bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-none border border-white dark:border-white/10 relative overflow-hidden group transition-all hover:shadow-[0_8px_40px_rgba(59,130,246,0.15)] flex flex-col h-full duration-500">
+           <div class="absolute top-0 right-0 w-48 h-48 bg-yellow-200 dark:bg-amber-500/20 opacity-20 rounded-full -mr-16 -mt-16 blur-2xl transition-transform duration-700 group-hover:scale-125"></div>
            
            <div class="flex items-center gap-6 mb-8 relative z-10">
-              <div class="w-16 h-16 bg-gradient-to-br from-yellow-100 to-amber-100 rounded-[1.25rem] flex items-center justify-center text-4xl shadow-sm border border-yellow-200 rotate-3 group-hover:rotate-6 transition-transform">☀️</div>
+              <div class="w-16 h-16 bg-gradient-to-br from-yellow-100 to-amber-100 dark:from-amber-500/20 dark:to-orange-500/20 rounded-[1.25rem] flex items-center justify-center text-4xl shadow-sm dark:shadow-none border border-yellow-200 dark:border-amber-500/30 rotate-3 group-hover:rotate-6 transition-all">☀️</div>
               <div>
-                 <h4 class="font-extrabold text-2xl text-slate-800 tracking-tight">Fotosensor Cahaya</h4>
-                 <div class="inline-flex items-center gap-2 mt-1 px-3 py-1 bg-amber-50 rounded-lg border border-amber-100">
+                 <h4 class="font-extrabold text-2xl text-slate-800 dark:text-slate-100 tracking-tight transition-colors">Fotosensor Cahaya</h4>
+                 <div class="inline-flex items-center gap-2 mt-1 px-3 py-1 bg-amber-50 dark:bg-amber-500/10 rounded-lg border border-amber-100 dark:border-amber-500/20 transition-colors">
                     <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-                    <p class="text-[11px] font-black text-amber-600 uppercase tracking-widest">Batas Gelap Maksimum</p>
+                    <p class="text-[11px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest transition-colors">Batas Gelap Maksimum</p>
                  </div>
               </div>
            </div>
            
            <div class="mb-4 flex justify-between items-end relative z-10">
-              <span class="text-sm font-bold text-slate-400 uppercase tracking-wider">Trigger Rel</span>
-              <span class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 drop-shadow-sm tabular-nums">{{ settings.ldr_threshold }}%</span>
+              <span class="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider transition-colors">Trigger Rel</span>
+              <span class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 drop-shadow-sm dark:drop-shadow-none tabular-nums">{{ settings.ldr_threshold }}%</span>
            </div>
 
            <div class="relative py-4 mb-4 z-10">
-              <div class="absolute w-full h-4 bg-slate-100 rounded-full inset-y-0 my-auto shadow-inner border border-slate-200"></div>
+              <div class="absolute w-full h-4 bg-slate-100 dark:bg-slate-800/50 rounded-full inset-y-0 my-auto shadow-inner border border-slate-200 dark:border-white/5 transition-colors"></div>
               <div class="absolute h-4 rounded-full inset-y-0 my-auto bg-gradient-to-r from-yellow-300 to-orange-500 shadow-[0_0_15px_rgba(245,158,11,0.5)] transition-all ease-out" :style="`width: ${settings.ldr_threshold}%`"></div>
               <input type="range" min="0" max="100" v-model.number="settings.ldr_threshold" @change="saveSettings" 
                      class="w-full absolute inset-y-0 my-auto h-4 appearance-none bg-transparent cursor-grab active:cursor-grabbing outline-none z-20 
-                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-orange-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125">
+                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:bg-white dark:[&::-webkit-slider-thumb]:bg-slate-800 [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-orange-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125">
            </div>
            
-           <div class="mt-auto pt-6 bg-gradient-to-br from-amber-50 to-orange-50/50 p-6 rounded-2xl border border-amber-100/50 text-amber-900 leading-relaxed shadow-inner">
-             <strong class="text-amber-700 bg-amber-100 px-2 py-1 rounded text-xs uppercase tracking-widest block mb-2 w-max">Cara Kerja AI</strong>
-             Jika kadar terik matahari jatuh <span class="font-extrabold bg-amber-200/50 px-1 rounded">di bawah {{ settings.ldr_threshold }}%</span> (Mendung/Malam), jemuran otomatis akan <strong>ditarik masuk</strong>.
+           <div class="mt-auto pt-6 bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10 p-6 rounded-2xl border border-amber-100/50 dark:border-amber-500/10 text-amber-900 dark:text-amber-200/80 leading-relaxed shadow-inner dark:shadow-none transition-colors">
+             <strong class="text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 px-2 py-1 rounded text-xs uppercase tracking-widest block mb-2 w-max transition-colors">Cara Kerja AI</strong>
+             Jika kadar terik matahari jatuh <span class="font-extrabold bg-amber-200/50 dark:bg-amber-500/30 px-1 rounded">di bawah {{ settings.ldr_threshold }}%</span> (Mendung/Malam), jemuran otomatis akan <strong class="dark:text-amber-200">ditarik masuk</strong>.
            </div>
         </div>
 
         <!-- Rain Setting -->
-        <div class="bg-white/80 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-white relative overflow-hidden group transition-all hover:shadow-[0_8px_40px_rgba(99,102,241,0.15)] flex flex-col h-full">
-           <div class="absolute top-0 right-0 w-48 h-48 bg-indigo-200 opacity-20 rounded-full -mr-16 -mt-16 blur-2xl transition-transform duration-700 group-hover:scale-125"></div>
+        <div class="bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-none border border-white dark:border-white/10 relative overflow-hidden group transition-all hover:shadow-[0_8px_40px_rgba(99,102,241,0.15)] flex flex-col h-full duration-500">
+           <div class="absolute top-0 right-0 w-48 h-48 bg-indigo-200 dark:bg-indigo-500/20 opacity-20 rounded-full -mr-16 -mt-16 blur-2xl transition-transform duration-700 group-hover:scale-125"></div>
            
            <div class="flex items-center gap-6 mb-8 relative z-10">
-              <div class="w-16 h-16 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-[1.25rem] flex items-center justify-center text-4xl shadow-sm border border-indigo-200 -rotate-3 group-hover:-rotate-6 transition-transform">🌧️</div>
+              <div class="w-16 h-16 bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-500/20 dark:to-blue-500/20 rounded-[1.25rem] flex items-center justify-center text-4xl shadow-sm dark:shadow-none border border-indigo-200 dark:border-indigo-500/30 -rotate-3 group-hover:-rotate-6 transition-all">🌧️</div>
               <div>
-                 <h4 class="font-extrabold text-2xl text-slate-800 tracking-tight">Sensor Presipitasi</h4>
-                 <div class="inline-flex items-center gap-2 mt-1 px-3 py-1 bg-indigo-50 rounded-lg border border-indigo-100">
+                 <h4 class="font-extrabold text-2xl text-slate-800 dark:text-slate-100 tracking-tight transition-colors">Sensor Presipitasi</h4>
+                 <div class="inline-flex items-center gap-2 mt-1 px-3 py-1 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg border border-indigo-100 dark:border-indigo-500/20 transition-colors">
                     <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-                    <p class="text-[11px] font-black text-indigo-600 uppercase tracking-widest">Toleransi Puncak Air</p>
+                    <p class="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest transition-colors">Toleransi Puncak Air</p>
                  </div>
               </div>
            </div>
            
            <div class="mb-4 flex justify-between items-end relative z-10">
-              <span class="text-sm font-bold text-slate-400 uppercase tracking-wider">Trigger Rel</span>
-              <span class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-600 drop-shadow-sm tabular-nums">{{ settings.rain_threshold }}%</span>
+              <span class="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider transition-colors">Trigger Rel</span>
+              <span class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-indigo-400 dark:to-cyan-400 drop-shadow-sm dark:drop-shadow-none tabular-nums">{{ settings.rain_threshold }}%</span>
            </div>
 
            <div class="relative py-4 mb-4 z-10">
-              <div class="absolute w-full h-4 bg-slate-100 rounded-full inset-y-0 my-auto shadow-inner border border-slate-200"></div>
+              <div class="absolute w-full h-4 bg-slate-100 dark:bg-slate-800/50 rounded-full inset-y-0 my-auto shadow-inner border border-slate-200 dark:border-white/5 transition-colors"></div>
               <div class="absolute h-4 rounded-full inset-y-0 my-auto bg-gradient-to-r from-blue-400 to-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.5)] transition-all ease-out" :style="`width: ${settings.rain_threshold}%`"></div>
               <input type="range" min="0" max="100" v-model.number="settings.rain_threshold" @change="saveSettings" 
                      class="w-full absolute inset-y-0 my-auto h-4 appearance-none bg-transparent cursor-grab active:cursor-grabbing outline-none z-20 
-                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-indigo-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125">
+                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:bg-white dark:[&::-webkit-slider-thumb]:bg-slate-800 [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-indigo-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125">
            </div>
            
-           <div class="mt-auto pt-6 bg-gradient-to-br from-indigo-50 to-blue-50/50 p-6 rounded-2xl border border-indigo-100/50 text-indigo-900 leading-relaxed shadow-inner">
-             <strong class="text-indigo-700 bg-indigo-100 px-2 py-1 rounded text-xs uppercase tracking-widest block mb-2 w-max">Cara Kerja AI</strong>
-             Jika kadar air di atas modul melebihi batas <span class="font-extrabold bg-indigo-200/50 px-1 rounded">{{ settings.rain_threshold }}%</span>, sistem menganggap hujan turun dan <strong>mengamankan jemuran</strong>.
+           <div class="mt-auto pt-6 bg-gradient-to-br from-indigo-50 to-blue-50/50 dark:from-indigo-900/10 dark:to-blue-900/10 p-6 rounded-2xl border border-indigo-100/50 dark:border-indigo-500/10 text-indigo-900 dark:text-indigo-200/80 leading-relaxed shadow-inner dark:shadow-none transition-colors">
+             <strong class="text-indigo-700 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-500/20 px-2 py-1 rounded text-xs uppercase tracking-widest block mb-2 w-max transition-colors">Cara Kerja AI</strong>
+             Jika kadar air di atas modul melebihi batas <span class="font-extrabold bg-indigo-200/50 dark:bg-indigo-500/30 px-1 rounded">{{ settings.rain_threshold }}%</span>, sistem menganggap hujan turun dan <strong class="dark:text-indigo-200">mengamankan jemuran</strong>.
            </div>
         </div>
      </div>
@@ -128,17 +128,17 @@
         </div>
      </div>
      <!-- Device API Key -->
-     <div class="bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100 flex flex-col md:flex-row items-center gap-6 group">
+     <div class="bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-none border border-slate-100 dark:border-white/10 flex flex-col md:flex-row items-center gap-6 group transition-colors duration-500">
         <div class="w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg border border-slate-700 flex-shrink-0 group-hover:scale-110 transition-transform">
            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
         </div>
         <div class="flex-1 text-center md:text-left">
-           <h4 class="font-black text-xl text-slate-800 tracking-tight">Otentikasi Mesin (ESP32 API Key)</h4>
-           <p class="text-sm font-medium text-slate-500 mt-1">Gunakan kunci rahasia ini sebagai Header <code class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono text-xs font-bold border border-slate-200 shadow-sm">X-API-KEY</code> di firmware C++ Anda.</p>
+           <h4 class="font-black text-xl text-slate-800 dark:text-slate-100 tracking-tight transition-colors">Otentikasi Mesin (ESP32 API Key)</h4>
+           <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 transition-colors">Gunakan kunci rahasia ini sebagai Header <code class="bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded font-mono text-xs font-bold border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none transition-colors">X-API-KEY</code> di firmware C++ Anda.</p>
         </div>
         <div class="w-full md:w-auto relative">
-           <input type="text" readonly :value="settings.device_key || 'Generate via Seeder...'" class="w-full md:w-[360px] bg-slate-50 border border-slate-200 text-slate-600 rounded-[1.25rem] pl-5 pr-14 py-4 font-mono font-bold tracking-widest focus:outline-none focus:ring-4 focus:ring-blue-500/10 text-center shadow-inner">
-           <button @click="copyApiKey" class="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-white rounded-xl text-slate-400 hover:text-blue-600 shadow-sm border border-slate-100 active:scale-95 transition-all">
+           <input type="text" readonly :value="settings.device_key || 'Generate via Seeder...'" class="w-full md:w-[360px] bg-slate-50 dark:bg-[#0a0e1a]/80 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 rounded-[1.25rem] pl-5 pr-14 py-4 font-mono font-bold tracking-widest focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-center shadow-inner dark:shadow-none transition-colors">
+           <button @click="copyApiKey" class="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-white dark:bg-white/10 rounded-xl text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-white shadow-sm dark:shadow-none border border-slate-100 dark:border-white/5 active:scale-95 transition-all">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
            </button>
         </div>

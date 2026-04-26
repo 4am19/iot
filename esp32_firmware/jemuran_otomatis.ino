@@ -42,6 +42,10 @@
 #include <LittleFS.h>
 #include <WebServer.h>
 #include <ElegantOTA.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
 
 // ============================================================================
 //  KONFIGURASI — SESUAIKAN DENGAN SERVER ANDA!
@@ -105,6 +109,18 @@ int ldrThreshold  = 50;  // Jika LDR < 50% → mendung/gelap → tarik
 int rainThreshold = 5;   // Jika rain > 5% → hujan → tarik
 
 // ============================================================================
+//  KONFIGURASI BLUETOOTH (BLE)
+// ============================================================================
+
+#define SERVICE_UUID           "0000ffe0-0000-1000-8000-00805f9b34fb"
+#define CHARACTERISTIC_UUID    "0000ffe1-0000-1000-8000-00805f9b34fb"
+
+BLEServer* pServer = NULL;
+BLECharacteristic* pCharacteristic = NULL;
+bool deviceConnected = false;
+bool oldDeviceConnected = false;
+
+// ============================================================================
 //  VARIABEL GLOBAL
 // ============================================================================
 
@@ -138,6 +154,77 @@ bool hasFlushedOffline = false;  // Sudah kirim offline data saat pertama konek
 
 // File path offline storage
 #define OFFLINE_FILE "/offline_queue.json"
+
+// ============================================================================
+//  BLE CALLBACKS & SETUP
+// ============================================================================
+
+class MyServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) {
+      deviceConnected = true;
+      Serial.println("🔵 [BLE] Terhubung dengan Dashboard!");
+    };
+
+    void onDisconnect(BLEServer* pServer) {
+      deviceConnected = false;
+      Serial.println("🔴 [BLE] Terputus!");
+    }
+};
+
+class MyCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      String value = pCharacteristic->getValue().c_str();
+
+      if (value.length() > 0) {
+        value.trim(); // Hapus newline atau spasi ekstra
+        Serial.print("📨 [BLE] Perintah diterima: ");
+        Serial.println(value);
+
+        if (value == "OUT") {
+          isManualMode = true; // Paksa masuk mode manual
+          clotheslineStatus = "Di Luar (Menjemur)";
+          moveServo(SERVO_JEMUR);
+          Serial.println("✅ [BLE] Eksekusi: KELUARKAN JEMURAN (Mode Manual Diaktifkan)");
+        } else if (value == "IN") {
+          isManualMode = true; // Paksa masuk mode manual
+          clotheslineStatus = "Di Dalam";
+          moveServo(SERVO_TARIK);
+          Serial.println("✅ [BLE] Eksekusi: TARIK MASUK (Mode Manual Diaktifkan)");
+        } else if (value == "AUTO") {
+          isManualMode = false;
+          Serial.println("✅ [BLE] Eksekusi: KEMBALI KE MODE AUTO");
+        }
+      }
+    }
+};
+
+void setupBLE() {
+  Serial.println("🔵 Inisialisasi Bluetooth Low Energy (BLE)...");
+  BLEDevice::init("Jemuran-IoT"); // Nama perangkat yang muncul saat di-scan
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+  pCharacteristic = pService->createCharacteristic(
+                      CHARACTERISTIC_UUID,
+                      BLECharacteristic::PROPERTY_READ   |
+                      BLECharacteristic::PROPERTY_WRITE  |
+                      BLECharacteristic::PROPERTY_NOTIFY |
+                      BLECharacteristic::PROPERTY_INDICATE
+                    );
+
+  pCharacteristic->setCallbacks(new MyCallbacks());
+  pCharacteristic->addDescriptor(new BLE2902());
+
+  pService->start();
+  
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(false);
+  pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
+  BLEDevice::startAdvertising();
+  Serial.println("✅ BLE Siap. Menunggu koneksi dari Dashboard Vue.js...");
+}
 
 // ============================================================================
 //  SETUP
@@ -180,17 +267,37 @@ void setup() {
     printOfflineQueueSize();
   }
 
+  // --- Setup Bluetooth (BLE) ---
+  setupBLE();
+
   // --- Setup WiFi via WiFiManager ---
   connectWiFiManager();
 
   // --- Setup ElegantOTA (Update Firmware via Browser) ---
   webServer.on("/", []() {
-    webServer.send(200, "text/html",
-      "<html><body style='font-family:sans-serif;text-align:center;margin-top:50px'>"
-      "<h2>🏠 Jemuran Otomatis ESP32</h2>"
-      "<p>Firmware Updater: <a href='/update'>/update</a></p>"
-      "<p>IP: " + WiFi.localIP().toString() + "</p>"
-      "</body></html>");
+    String html = 
+      "<!DOCTYPE html><html lang='id'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+      "<title>IoT Jemuran Portal</title>"
+      "<style>"
+      "body{margin:0;padding:0;background:linear-gradient(135deg,#0a0e1a,#1e1b4b);color:#f1f5f9;font-family:'Segoe UI',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;}"
+      ".card{background:rgba(255,255,255,0.03);backdrop-filter:blur(20px);padding:40px;border-radius:24px;border:1px solid rgba(255,255,255,0.05);box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);text-align:center;max-width:400px;width:90%;transition:transform 0.3s;}"
+      ".card:hover{transform:translateY(-5px);}"
+      ".icon{font-size:48px;margin-bottom:15px;display:inline-block;animation:float 3s ease-in-out infinite;}"
+      "@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}"
+      "h1{margin:0 0 10px;font-size:24px;background:linear-gradient(90deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}"
+      "p{color:#94a3b8;font-size:14px;line-height:1.6;margin-bottom:25px;}"
+      ".ip-box{background:rgba(0,0,0,0.2);padding:10px;border-radius:12px;font-family:monospace;font-size:16px;color:#a5b4fc;margin-bottom:30px;border:1px dashed rgba(165,180,252,0.3);}"
+      "a.btn{display:inline-block;padding:12px 24px;background:linear-gradient(90deg,#4f46e5,#7c3aed);color:white;text-decoration:none;border-radius:12px;font-weight:bold;box-shadow:0 4px 15px rgba(79,70,229,0.4);transition:all 0.3s;}"
+      "a.btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 25px rgba(79,70,229,0.6);}"
+      "</style></head><body>"
+      "<div class='card'>"
+      "<div class='icon'>🏠</div>"
+      "<h1>IoT Control Portal</h1>"
+      "<p>Sistem firmware pintar sedang berjalan. Portal ini digunakan secara khusus untuk melakukan konfigurasi dan pembaruan sistem (*Over-The-Air Update*).</p>"
+      "<div class='ip-box'>IP: " + WiFi.localIP().toString() + "</div>"
+      "<a href='/update' class='btn'>🚀 Buka OTA Updater</a>"
+      "</div></body></html>";
+    webServer.send(200, "text/html", html);
   });
   ElegantOTA.begin(&webServer);
   webServer.begin();
@@ -210,6 +317,17 @@ void loop() {
   // Handle request ke web server ElegantOTA
   webServer.handleClient();
   ElegantOTA.loop();
+
+  // Handle koneksi ulang BLE advertising jika terputus
+  if (!deviceConnected && oldDeviceConnected) {
+      delay(500); // beri waktu bluetooth stack untuk siap
+      pServer->startAdvertising(); // restart advertising
+      Serial.println("🔵 Mulai Advertising BLE kembali (Menunggu Koneksi)...");
+      oldDeviceConnected = deviceConnected;
+  }
+  if (deviceConnected && !oldDeviceConnected) {
+      oldDeviceConnected = deviceConnected;
+  }
 
   // Cek koneksi WiFi, reconnect jika putus
   if (WiFi.status() != WL_CONNECTED) {
@@ -297,12 +415,33 @@ void connectWiFiManager() {
   // wm.resetSettings(); // Uncomment baris ini HANYA jika ingin reset / ganti WiFi
 
   // Kustomisasi halaman portal
-  wm.setTitle("🏠 Setup Jemuran Otomatis");
+  wm.setTitle("🏠 IoT Setup Portal");
   wm.setConfigPortalTimeout(WIFI_TIMEOUT_SEC);
 
+  // CSS Kustom untuk Tampilan Portal WiFi yang Modern, Premium, & Responsif
+  const char* customCSS = 
+    "<style>"
+    "body{background: linear-gradient(135deg, #0a0e1a, #1e1b4b); color:#f1f5f9; font-family:'Segoe UI',system-ui,sans-serif; margin:0; padding:0; display:flex; align-items:center; justify-content:center; min-height:100vh;}"
+    ".wrap{max-width: 420px; width: 90%; padding: 40px 30px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align:center; animation: fadeIn 0.6s ease-out;}"
+    "@keyframes fadeIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }"
+    "h1{font-size: 26px; font-weight: 800; margin-bottom: 5px; background: linear-gradient(90deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}"
+    "h3{color: #94a3b8; font-weight:normal; font-size:14px; margin-bottom:25px; line-height:1.5;}"
+    "input{width: 100%; padding: 14px 16px; margin-bottom: 16px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; font-size: 15px; box-sizing: border-box; outline: none; transition: all 0.3s ease;}"
+    "input:focus{border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.2); background: rgba(0,0,0,0.4);}"
+    "input::placeholder{color: #64748b;}"
+    "button{width: 100%; padding: 15px; background: linear-gradient(90deg, #4f46e5, #7c3aed); border: none; border-radius: 12px; color: #fff; font-weight: bold; font-size: 16px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px; box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4); text-transform: uppercase; letter-spacing: 1px;}"
+    "button:hover{transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(79,70,229,0.6);}"
+    "button:active{transform: translateY(1px); box-shadow: 0 5px 10px -5px rgba(79,70,229,0.4);}"
+    ".msg{background: rgba(16,185,129,0.1); color: #34d399; padding: 12px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(16,185,129,0.2); font-size:14px;}"
+    "a{color: #a5b4fc; text-decoration: none; font-size: 14px; transition: color 0.3s;}"
+    "a:hover{color: #fff; text-decoration: underline;}"
+    "div[style*='text-align:left']{text-align: center !important;}" /* Override default layout */
+    ".c{display:none;}" /* Hide default list styles or junk from WiFiManager */
+    "</style>";
+  wm.setCustomHeadElement(customCSS);
+
   // Parameter tambahan: Server URL bisa diisi dari portal WiFi
-  WiFiManagerParameter serverParam("server", "URL Server (tanpa /)",
-    SERVER_BASE_URL, 80);
+  WiFiManagerParameter serverParam("server", "URL Server Dashboard (opsional)", SERVER_BASE_URL, 80);
   wm.addParameter(&serverParam);
 
   Serial.println("📶 Menghubungkan ke WiFi...");
