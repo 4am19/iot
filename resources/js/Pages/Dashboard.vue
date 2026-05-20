@@ -45,7 +45,7 @@
                 <div class="flex items-center justify-center md:justify-start gap-3 mb-6">
                    <div class="px-3 py-1.5 bg-white/60 dark:bg-white/[0.06] rounded-lg text-slate-600 dark:text-slate-300 text-sm font-semibold border border-slate-200 dark:border-white/10 flex items-center gap-2 shadow-sm dark:shadow-none transition-colors">
                      <svg class="w-4 h-4 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                     {{ settings.is_auto_mode ? 'Kecerdasan Buatan (Auto)' : 'Manual Override Aktif' }}
+                     {{ settings.is_auto_mode ? 'Mode Otomatis (auto)' : 'Manual Override Aktif' }}
                    </div>
                 </div>
                 
@@ -140,7 +140,7 @@
                 SISTEM PUSAT
              </div>
              
-             <p class="text-center text-sm text-slate-500 mb-8 max-w-sm font-medium relative z-10">Alihkan ke Mode Manual untuk mengambil kendali rel motor secara penuh dari Kecerdasan Buatan.</p>
+             <p class="text-center text-sm text-slate-500 mb-8 max-w-sm font-medium relative z-10">Alihkan ke Mode Manual untuk mengambil kendali rel motor secara penuh dari otomatis.</p>
              
              <div class="flex flex-col items-center justify-center relative z-10 w-full">
                <button @click="toggleAutoMode" 
@@ -162,9 +162,9 @@
                </button>
                
                <div class="mt-6 px-5 py-2 rounded-xl bg-white/[0.06] border border-white/10 backdrop-blur transition-colors duration-500"
-                    :class="settings.is_auto_mode ? 'text-emerald-400' : 'text-slate-300'">
+                    :class="settings.is_auto_mode ? 'text-emerald-400' : 'text-red-500'">
                  <span class="font-bold text-sm md:text-base tracking-tight">
-                    {{ settings.is_auto_mode ? 'KENDALI KECERDASAN BUATAN' : 'PENGENDALIAN MANUAL AKTIF'}}
+                    {{ settings.is_auto_mode ? 'KENDALI OTOMATIS AKTIF' : 'PENGENDALIAN MANUAL AKTIF'}}
                  </span>
                </div>
              </div>
@@ -491,8 +491,8 @@ export default {
         await axios.post('/api/update-setting', { is_auto_mode: newMode });
         this.$emit('toast', {
           type: newMode ? 'success' : 'info',
-          title: newMode ? 'Kecerdasan Buatan Aktif' : 'Sistem Manual Diambil Alih',
-          message: newMode ? 'AI kini memantau cuaca dan mengendalikan rel motor.' : 'Anda memegang kendali penuh atas posisi jemuran.'
+          title: newMode ? 'Sistem Otomatis Aktif' : 'Sistem Manual Diambil Alih',
+          message: newMode ? 'Sistem kini otomoatis memantau cuaca dan mengendalikan rel motor.' : 'Anda memegang kendali penuh atas posisi jemuran.'
         });
         this.fetchData();
       } catch (err) {

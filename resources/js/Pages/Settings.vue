@@ -5,7 +5,7 @@
         <div class="absolute right-0 top-0 w-64 h-64 bg-blue-100/50 dark:bg-indigo-500/10 rounded-full blur-[60px] pointer-events-none -mr-10 -mt-10 transition-colors"></div>
         <div class="relative z-10 text-center xl:text-left flex-1">
            <h3 class="text-3xl md:text-4xl font-black text-slate-800 dark:text-slate-100 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-blue-600 dark:from-indigo-300 dark:to-cyan-300 transition-colors">Sistem & Kalibrasi</h3>
-           <p class="text-slate-500 dark:text-slate-400 mt-3 font-medium text-lg max-w-xl transition-colors">Atur identitas sistem dan sensitivitas mata AI secara presisi.</p>
+           <p class="text-slate-500 dark:text-slate-400 mt-3 font-medium text-lg max-w-xl transition-colors">Atur identitas sistem dan sensitivitas secara presisi.</p>
         </div>
 
         <div class="relative z-10 bg-white/80 dark:bg-[#0a0e1a]/50 p-5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm dark:shadow-none w-full xl:w-auto min-w-[320px] transition-colors">
@@ -109,7 +109,7 @@
                   <span class="text-xs font-black uppercase tracking-[0.2em]">{{ settings.is_auto_mode ? 'Sistem Aktif' : 'Perlu Intervensi' }}</span>
               </div>
               <h4 class="font-black text-4xl lg:text-5xl mb-4 tracking-tight drop-shadow-md">
-                 {{ settings.is_auto_mode ? 'Kecerdasan Buatan Menyala' : 'Hak Akses AI Dicabut!' }}
+                 {{ settings.is_auto_mode ? 'Sistem Otomatis Aktif' : 'Sistem Manual Aktif!' }}
               </h4>
               <p class="text-white/70 text-lg font-medium leading-relaxed">
                  {{ settings.is_auto_mode ? 'ESP32 mengontrol jemuran berdasarkan sensor real-time. Anda bisa bersantai.' : 'Mode manual aktif. Gunakan tombol kontrol dari dashboard untuk mengontrol jemuran.' }}
@@ -122,7 +122,7 @@
                <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] skew-x-[-20deg] group-hover/btn:translate-x-[150%] transition-transform duration-700"></div>
                <div class="relative flex items-center justify-center gap-3">
                   <span class="text-3xl">{{ settings.is_auto_mode ? '⚡' : '🛡️' }}</span>
-                  <span>{{ settings.is_auto_mode ? 'GABUNG MANUAL' : 'REAKTIVASI AI' }}</span>
+                  <span>{{ settings.is_auto_mode ? 'GABUNG MANUAL' : 'REAKTIVASI OTOMATIS' }}</span>
                </div>
            </button>
         </div>
