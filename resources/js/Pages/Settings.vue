@@ -181,7 +181,14 @@ export default {
     },
     async saveSettings() {
       try {
-        await axios.post('/api/update-setting', this.settings);
+        const payload = {
+          is_auto_mode: this.settings.is_auto_mode,
+          ldr_threshold: this.settings.ldr_threshold,
+          rain_threshold: this.settings.rain_threshold,
+          manual_position: this.settings.manual_position,
+          owner_name: this.settings.owner_name,
+        };
+        await axios.post('/api/update-setting', payload);
         this.$emit('toast', { type: 'success', title: 'Tersimpan!', message: 'Kalibrasi sensor berhasil diperbarui.' });
       } catch (error) { 
         this.$emit('toast', { type: 'error', title: 'Gagal!', message: 'Tidak bisa menyimpan pengaturan.' });

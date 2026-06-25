@@ -37,15 +37,17 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ESP32Servo.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <WebServer.h>
 #include <ElegantOTA.h>
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-#include <BLE2902.h>
+// BLE Libraries removed to save Flash Space (Fit into Default Partition)
+// #include <BLEDevice.h>
+// #include <BLEServer.h>
+// #include <BLEUtils.h>
+// #include <BLE2902.h>
 
 // ============================================================================
 //  KONFIGURASI — SESUAIKAN DENGAN SERVER ANDA!
@@ -55,7 +57,7 @@
 // Contoh Railway  : "https://iot-jemuran.up.railway.app"
 // Contoh VPS      : "https://jemuran.namadomain.com"
 // Lokal (testing) : "http://192.168.1.110:8000"
-const char* SERVER_BASE_URL = "https://mya-unsubsidized-fabulously.ngrok-free.dev";
+const char* SERVER_BASE_URL = "https://mya-unsubsidized-fabulously.ngrok-free.dev"; // URL Ngrok Anda
 
 // API Key — salin dari halaman Settings di dashboard Anda
 const char* API_KEY = "e6b69b1c94024fbd2b3a047e80cc43c1";
@@ -78,9 +80,9 @@ const char* API_KEY = "e6b69b1c94024fbd2b3a047e80cc43c1";
 //  KONFIGURASI SERVO
 // ============================================================================
 
-#define SERVO_JEMUR      180  // Derajat servo saat jemuran di LUAR
-#define SERVO_TARIK      0    // Derajat servo saat jemuran di DALAM
-#define SERVO_SPEED_MS   12   // Delay (ms) per derajat gerakan (lebih kecil = lebih cepat)
+#define SERVO_JEMUR      0    // Derajat servo saat jemuran di LUAR (Dibalik)
+#define SERVO_TARIK      90   // Derajat servo saat jemuran di DALAM (Dibalik)
+#define SERVO_SPEED_MS   15   // Delay (ms) per derajat gerakan (diperbesar agar arus lebih stabil)
 
 // ============================================================================
 //  KONFIGURASI SENSOR & SAMPLING
@@ -97,7 +99,7 @@ const char* API_KEY = "e6b69b1c94024fbd2b3a047e80cc43c1";
 //  KONFIGURASI TIMING
 // ============================================================================
 
-#define HEARTBEAT_INTERVAL_MS  10000  // Kirim data rutin setiap 10 detik (hemat bandwith)
+#define HEARTBEAT_INTERVAL_MS  5000   // Ditingkatkan jadi 5000ms (5 detik) untuk mencegah Limit Request Ngrok dan memori ESP32!
 #define OFFLINE_SAVE_INTERVAL  5000   // Simpan ke LittleFS setiap 5 detik saat offline
 #define MAX_OFFLINE_RECORDS    200    // Maksimal record offline tersimpan (hemat memori)
 
@@ -108,17 +110,7 @@ const char* API_KEY = "e6b69b1c94024fbd2b3a047e80cc43c1";
 int ldrThreshold  = 50;  // Jika LDR < 50% → mendung/gelap → tarik
 int rainThreshold = 5;   // Jika rain > 5% → hujan → tarik
 
-// ============================================================================
-//  KONFIGURASI BLUETOOTH (BLE)
-// ============================================================================
-
-#define SERVICE_UUID           "0000ffe0-0000-1000-8000-00805f9b34fb"
-#define CHARACTERISTIC_UUID    "0000ffe1-0000-1000-8000-00805f9b34fb"
-
-BLEServer* pServer = NULL;
-BLECharacteristic* pCharacteristic = NULL;
-bool deviceConnected = false;
-bool oldDeviceConnected = false;
+// BLE UUIDs removed
 
 // ============================================================================
 //  VARIABEL GLOBAL
@@ -126,6 +118,7 @@ bool oldDeviceConnected = false;
 
 Servo servoMotor;
 WebServer webServer(80);       // Web server untuk ElegantOTA
+WiFiClientSecure secureClient; // Global client agar SSL connection bisa di-reuse
 
 // Status sistem
 String clotheslineStatus = "Di Luar (Menjemur)";
@@ -159,73 +152,10 @@ bool hasFlushedOffline = false;  // Sudah kirim offline data saat pertama konek
 //  BLE CALLBACKS & SETUP
 // ============================================================================
 
-class MyServerCallbacks: public BLEServerCallbacks {
-    void onConnect(BLEServer* pServer) {
-      deviceConnected = true;
-      Serial.println("🔵 [BLE] Terhubung dengan Dashboard!");
-    };
+void moveServo(int targetAngle); // Function prototype
 
-    void onDisconnect(BLEServer* pServer) {
-      deviceConnected = false;
-      Serial.println("🔴 [BLE] Terputus!");
-    }
-};
 
-class MyCallbacks: public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic *pCharacteristic) {
-      String value = pCharacteristic->getValue().c_str();
-
-      if (value.length() > 0) {
-        value.trim(); // Hapus newline atau spasi ekstra
-        Serial.print("📨 [BLE] Perintah diterima: ");
-        Serial.println(value);
-
-        if (value == "OUT") {
-          isManualMode = true; // Paksa masuk mode manual
-          clotheslineStatus = "Di Luar (Menjemur)";
-          moveServo(SERVO_JEMUR);
-          Serial.println("✅ [BLE] Eksekusi: KELUARKAN JEMURAN (Mode Manual Diaktifkan)");
-        } else if (value == "IN") {
-          isManualMode = true; // Paksa masuk mode manual
-          clotheslineStatus = "Di Dalam";
-          moveServo(SERVO_TARIK);
-          Serial.println("✅ [BLE] Eksekusi: TARIK MASUK (Mode Manual Diaktifkan)");
-        } else if (value == "AUTO") {
-          isManualMode = false;
-          Serial.println("✅ [BLE] Eksekusi: KEMBALI KE MODE AUTO");
-        }
-      }
-    }
-};
-
-void setupBLE() {
-  Serial.println("🔵 Inisialisasi Bluetooth Low Energy (BLE)...");
-  BLEDevice::init("Jemuran-IoT"); // Nama perangkat yang muncul saat di-scan
-  pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
-
-  BLEService *pService = pServer->createService(SERVICE_UUID);
-  pCharacteristic = pService->createCharacteristic(
-                      CHARACTERISTIC_UUID,
-                      BLECharacteristic::PROPERTY_READ   |
-                      BLECharacteristic::PROPERTY_WRITE  |
-                      BLECharacteristic::PROPERTY_NOTIFY |
-                      BLECharacteristic::PROPERTY_INDICATE
-                    );
-
-  pCharacteristic->setCallbacks(new MyCallbacks());
-  pCharacteristic->addDescriptor(new BLE2902());
-
-  pService->start();
-  
-  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->setScanResponse(false);
-  pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
-  BLEDevice::startAdvertising();
-  Serial.println("✅ BLE Siap. Menunggu koneksi dari Dashboard Vue.js...");
-}
-
+// BLE classes and setup removed
 // ============================================================================
 //  SETUP
 // ============================================================================
@@ -268,14 +198,17 @@ void setup() {
   }
 
   // --- Setup Bluetooth (BLE) ---
-  setupBLE();
+  // BLE setup removed to save flash size
+
+  // --- Setup WiFiClientSecure (Bypass SSL) ---
+  secureClient.setInsecure();
 
   // --- Setup WiFi via WiFiManager ---
   connectWiFiManager();
 
   // --- Setup ElegantOTA (Update Firmware via Browser) ---
   webServer.on("/", []() {
-    String html = 
+    String html =
       "<!DOCTYPE html><html lang='id'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>"
       "<title>IoT Jemuran Portal</title>"
       "<style>"
@@ -318,17 +251,7 @@ void loop() {
   webServer.handleClient();
   ElegantOTA.loop();
 
-  // Handle koneksi ulang BLE advertising jika terputus
-  if (!deviceConnected && oldDeviceConnected) {
-      delay(500); // beri waktu bluetooth stack untuk siap
-      pServer->startAdvertising(); // restart advertising
-      Serial.println("🔵 Mulai Advertising BLE kembali (Menunggu Koneksi)...");
-      oldDeviceConnected = deviceConnected;
-  }
-  if (deviceConnected && !oldDeviceConnected) {
-      oldDeviceConnected = deviceConnected;
-  }
-
+  // BLE logic removed
   // Cek koneksi WiFi, reconnect jika putus
   if (WiFi.status() != WL_CONNECTED) {
     if (isWiFiConnected) {
@@ -419,7 +342,7 @@ void connectWiFiManager() {
   wm.setConfigPortalTimeout(WIFI_TIMEOUT_SEC);
 
   // CSS Kustom untuk Tampilan Portal WiFi yang Modern, Premium, & Responsif
-  const char* customCSS = 
+  const char* customCSS =
     "<style>"
     "body{background: linear-gradient(135deg, #0a0e1a, #1e1b4b); color:#f1f5f9; font-family:'Segoe UI',system-ui,sans-serif; margin:0; padding:0; display:flex; align-items:center; justify-content:center; min-height:100vh;}"
     ".wrap{max-width: 420px; width: 90%; padding: 40px 30px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align:center; animation: fadeIn 0.6s ease-out;}"
@@ -530,7 +453,7 @@ void determineWeatherAndAction() {
 
   // Logika utama (hanya gerak otomatis jika tidak di mode manual)
   String prevStatus = clotheslineStatus;
-  
+
   if (!isManualMode) {
     if (rainPercentage >= rainThreshold || ldrValue < ldrThreshold) {
       clotheslineStatus = "Di Dalam";
@@ -553,6 +476,9 @@ void determineWeatherAndAction() {
 
 void moveServo(int targetAngle) {
   if (currentServoAngle == targetAngle) return;
+
+  // Beri jeda 1 detik agar tegangan stabil sebelum menarik arus besar
+  delay(1000);
 
   Serial.printf("⚙️  Servo: %d° → %d°\n", currentServoAngle, targetAngle);
 
@@ -581,8 +507,9 @@ void sendDataToServer() {
   if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
+  http.setReuse(true); // Mempertahankan koneksi SSL agar tidak handshake ulang (menghemat waktu dan mencegah connection refused)
   String url = String(SERVER_BASE_URL) + "/api/sensor/data";
-  http.begin(url);
+  http.begin(secureClient, url);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-API-KEY", API_KEY);
   http.addHeader("ngrok-skip-browser-warning", "true"); // Bypass Ngrok interstitial page
@@ -767,8 +694,9 @@ void flushOfflineData() {
 
   // Kirim batch ke endpoint /api/sensor/data/batch
   HTTPClient http;
+  http.setReuse(true);
   String url = String(SERVER_BASE_URL) + "/api/sensor/data/batch";
-  http.begin(url);
+  http.begin(secureClient, url);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-API-KEY", API_KEY);
   http.addHeader("ngrok-skip-browser-warning", "true"); // Bypass Ngrok interstitial page

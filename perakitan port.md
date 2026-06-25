@@ -55,13 +55,15 @@ graph LR
 ║   │   DevKit V1    │                                              ║
 ║   │               │                                              ║
 ║   │  3V3 ────────────────┬──── VCC LDR Module                    ║
-║   │               │      ├──── VCC Rain Module                   ║
-║   │               │      └──── VCC Servo SG90 (Merah)            ║
-║   │               │            ※ Lihat catatan power servo       ║
+║   │               │      └──── VCC Rain Module                   ║
 ║   │               │                                              ║
+║   │               │      ┌──── VCC Servo SG90 (Merah)            ║
+║   │               │      │     [+] Holder Baterai AA x4          ║
+║   │               │      │                                       ║
 ║   │  GND ────────────────┬──── GND LDR Module                    ║
 ║   │               │      ├──── GND Rain Module                   ║
-║   │               │      └──── GND Servo SG90 (Coklat)           ║
+║   │               │      ├──── GND Servo SG90 (Coklat)           ║
+║   │               │      └──── [-] Holder Baterai AA x4          ║
 ║   │               │                                              ║
 ║   │  GPIO 14 ─────────── DO LDR Module (Digital Out)             ║
 ║   │               │                                              ║
@@ -100,20 +102,18 @@ graph LR
 > [!NOTE]
 > Raindrops sensor memiliki 2 bagian: **papan sensor** (yang kena hujan) dan **modul kontrol** (yang punya potensiometer). Hubungkan kabel dari **modul kontrol**, bukan langsung dari papan sensor.
 
-#### 3️⃣ TowerPro SG90 Servo → ESP32
+#### 3️⃣ TowerPro SG90 Servo → Holder Baterai & ESP32
 
-| Pin Servo SG90 | Warna Kabel Servo | Pin ESP32 | Keterangan |
+| Pin Servo SG90 | Warna Kabel Servo | Sambungan | Keterangan |
 |----------------|-------------------|-----------|------------|
-| **VCC** | 🔴 Merah | **3V3 / VIN 5V** | Sumber daya |
-| **GND** | 🟤 Coklat | **GND** | Ground |
-| **Signal** | 🟠 Oranye | **GPIO 13** | Sinyal PWM |
+| **VCC** | 🔴 Merah | **Kabel Merah (+) Baterai** | Sumber daya dari Holder Baterai AA x4 (6V) |
+| **GND** | 🟤 Coklat | **Kabel Hitam (-) Baterai & GND ESP32** | Ground Baterai WAJIB disambung ke Ground ESP32 |
+| **Signal** | 🟠 Oranye | **GPIO 13 (ESP32)** | Sinyal PWM dari ESP32 |
 
 > [!WARNING]
-> **Catatan Penting untuk Power Servo SG90:**
-> - Servo SG90 idealnya membutuhkan **5V**. Pin **3V3** ESP32 bisa bekerja untuk beban ringan, tetapi servo mungkin kurang bertenaga.
-> - **Rekomendasi terbaik:** Gunakan pin **VIN (5V)** ESP32 untuk menyambungkan VCC servo, ATAU gunakan sumber daya eksternal 5V terpisah.
-> - Jika menggunakan sumber daya eksternal, **GND servo dan GND ESP32 HARUS disambungkan** (common ground).
-> - Jangan sambungkan servo langsung ke port USB laptop tanpa adaptor — arus bisa tidak cukup.
+> **Catatan Penting untuk Power Servo Menggunakan Baterai:**
+> - **GND Common (PENTING!):** Kabel Hitam dari Holder Baterai HARUS disambungkan ke kabel Coklat Servo DAN pin **GND** di ESP32. Jika ground tidak disatukan, sinyal PWM dari ESP32 tidak akan terbaca oleh servo (servo akan bergetar atau diam).
+> - Kabel Merah (+) Holder Baterai HANYA disambungkan ke kabel Merah Servo. JANGAN hubungkan ke pin 3V3 atau VIN ESP32 agar arus tidak bertabrakan.
 
 ---
 
@@ -135,10 +135,10 @@ graph LR
    - GND → jalur `-` breadboard
    - AO → kabel jumper ke `GPIO 35`
    - DO → kabel jumper ke `GPIO 25`
-5. **Pasang Servo SG90:**
-   - Merah (VCC) → jalur `+` breadboard (atau 5V/VIN)
-   - Coklat (GND) → jalur `-` breadboard
-   - Oranye (Signal) → kabel jumper ke `GPIO 13`
+5. **Pasang Servo SG90 (Power Baterai AA x4):**
+   - Merah (VCC Servo) → hubungkan langsung ke kabel merah (+) Holder Baterai.
+   - Coklat (GND Servo) → hubungkan ke jalur `-` breadboard (yang sudah terhubung ke GND ESP32) DAN kabel hitam (-) Holder Baterai.
+   - Oranye (Signal Servo) → kabel jumper ke `GPIO 13` ESP32.
 
 ---
 

@@ -331,8 +331,8 @@ export default {
                 const lastUpdate = new Date(response.data.latestData.created_at);
                 const diffSeconds = (now - lastUpdate) / 1000;
                 
-                // Toleransi 60 detik (karena sistem polling & delay internet)
-                this.esp32Online = diffSeconds <= 60;
+                // Toleransi 120 detik (karena sistem polling & delay internet/ngrok)
+                this.esp32Online = diffSeconds <= 120;
              } else {
                 this.esp32Online = false;
              }

@@ -39,7 +39,7 @@ class DatabaseSeeder extends Seeder
                 'ldr_threshold'   => 50,
                 'rain_threshold'  => 5,
                 'manual_position' => 'Di Luar (Menjemur)',
-                'device_key'      => bin2hex(random_bytes(16)),
+                'device_key'      => 'e6b69b1c94024fbd2b3a047e80cc43c1',
             ]
         );
 

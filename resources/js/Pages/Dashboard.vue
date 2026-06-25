@@ -52,7 +52,7 @@
                 <div class="flex justify-center md:justify-start">
                    <div class="bg-white/60 dark:bg-white/[0.06] backdrop-blur-xl px-5 py-3.5 rounded-xl border border-slate-200 dark:border-white/10 flex items-center gap-4 group-hover:scale-105 transition-all duration-500 shadow-sm dark:shadow-none">
                       <div class="w-11 h-11 bg-indigo-50 dark:bg-indigo-500/15 rounded-lg flex items-center justify-center text-2xl border border-indigo-100 dark:border-indigo-500/20">
-                        {{ latestData.weather_condition === 'Hujan' ? '🌧️' : latestData.weather_condition === 'Cerah' ? '☀️' : '⛅' }}
+                        {{ latestData.weather_condition?.includes('Hujan') ? '🌧️' : latestData.weather_condition?.includes('Cerah') ? '☀️' : '⛅' }}
                       </div>
                       <div>
                          <p class="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5">Prediksi Cuaca</p>
@@ -192,7 +192,7 @@
              <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
                <div v-if="pendingCommand" class="mb-4 flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 text-amber-300 px-4 py-3 rounded-xl text-xs font-bold">
                  <svg class="w-4 h-4 animate-spin text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                 <span>Mengirim perintah ke ESP32... Tunggu response berikutnya (~10 detik)</span>
+                 <span>Mengirim perintah ke ESP32... Tunggu response berikutnya (~1.5 detik)</span>
                </div>
              </transition>
              
@@ -320,7 +320,7 @@ export default {
   },
   mounted() {
     this.fetchData();
-    this.polling = setInterval(this.fetchData, 3000);
+    this.polling = setInterval(this.fetchData, 1500);
   },
   unmounted() {
     clearInterval(this.polling);

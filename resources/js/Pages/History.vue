@@ -139,11 +139,11 @@ export default {
       }
       const headers = ['Waktu', 'Cuaca', 'LDR (%)', 'Hujan (%)', 'Posisi Motor'];
       const rows = this.logs.map(l => [
-        this.formatDate(l.created_at),
-        l.weather_condition,
+        `"${this.formatDate(l.created_at)}"`,
+        `"${l.weather_condition}"`,
         l.ldr_value,
         l.rain_percentage,
-        l.clothesline_status
+        `"${l.clothesline_status}"`
       ]);
       const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

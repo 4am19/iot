@@ -59,7 +59,14 @@ class SensorController extends Controller
             'clothesline_status' => 'required|string',
         ]);
 
-        $log = SensorLog::create($validated);
+        $latestLog = SensorLog::latest()->first();
+
+        if ($latestLog && $latestLog->clothesline_status === $validated['clothesline_status']) {
+            $latestLog->update($validated);
+            $log = $latestLog;
+        } else {
+            $log = SensorLog::create($validated);
+        }
 
         // Ambil settings terbaru
         $setting = DeviceSetting::first();
@@ -114,29 +121,37 @@ class SensorController extends Controller
             '*.rain_percentage'    => 'required|numeric',
             '*.weather_condition'  => 'required|string|max:50',
             '*.clothesline_status' => 'required|string|max:50',
-            // recorded_at dari ESP32 = millis() (angka integer) → selalu pakai now() saja
+            '*.recorded_at'        => 'nullable|numeric',
         ]);
 
-        $records = collect($request->all())->map(function ($item) {
-            return [
-                'ldr_value'          => $item['ldr_value'],
-                'rain_percentage'    => $item['rain_percentage'],
-                'weather_condition'  => $item['weather_condition'],
-                'clothesline_status' => $item['clothesline_status'],
-                // recorded_at dari ESP32 adalah millis() (bukan timestamp),
-                // jadi kita gunakan waktu server saat batch diterima
-                'created_at'         => now(),
-                'updated_at'         => now(),
-            ];
-        })->toArray();
+        $latestLog = SensorLog::latest()->first();
+        $count = 0;
 
-        // Mass insert — jauh lebih efisien dari loop create()
-        SensorLog::insert($records);
+        foreach ($request->all() as $item) {
+            if ($latestLog && $latestLog->clothesline_status === $item['clothesline_status']) {
+                $latestLog->update([
+                    'ldr_value'          => $item['ldr_value'],
+                    'rain_percentage'    => $item['rain_percentage'],
+                    'weather_condition'  => $item['weather_condition'],
+                    'updated_at'         => now(),
+                ]);
+            } else {
+                $latestLog = SensorLog::create([
+                    'ldr_value'          => $item['ldr_value'],
+                    'rain_percentage'    => $item['rain_percentage'],
+                    'weather_condition'  => $item['weather_condition'],
+                    'clothesline_status' => $item['clothesline_status'],
+                    'created_at'         => now(),
+                    'updated_at'         => now(),
+                ]);
+            }
+            $count++;
+        }
 
         return response()->json([
             'status'  => 'success',
-            'message' => count($records) . ' data offline berhasil disinkronkan.',
-            'count'   => count($records),
+            'message' => $count . ' data offline berhasil disinkronkan.',
+            'count'   => $count,
         ], 201);
     }
 
@@ -177,6 +192,20 @@ class SensorController extends Controller
             'payload' => $validated['payload'] ?? null,
             'executed' => false,
         ]);
+
+        // Otomatis matikan Auto Mode jika user mengirim perintah manual (agar ESP32 tidak langsung revert)
+        $setting = DeviceSetting::first();
+        if ($setting) {
+            if ($validated['command'] === 'move_in') {
+                $setting->update(['is_auto_mode' => false, 'manual_position' => 'Di Dalam']);
+            } elseif ($validated['command'] === 'move_out') {
+                $setting->update(['is_auto_mode' => false, 'manual_position' => 'Di Luar (Menjemur)']);
+            } elseif ($validated['command'] === 'set_manual') {
+                $setting->update(['is_auto_mode' => false]);
+            } elseif ($validated['command'] === 'set_auto') {
+                $setting->update(['is_auto_mode' => true]);
+            }
+        }
 
         return response()->json([
             'status'  => 'success',
