@@ -9,6 +9,7 @@ class CommandQueue extends Model
     protected $table = 'command_queue';
 
     protected $fillable = [
+        'device_id',
         'command',
         'payload',
         'executed',
@@ -20,4 +21,9 @@ class CommandQueue extends Model
         'executed'    => 'boolean',
         'executed_at' => 'datetime',
     ];
+
+    public function device()
+    {
+        return $this->belongsTo(Device::class);
+    }
 }

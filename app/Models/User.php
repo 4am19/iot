@@ -37,4 +37,12 @@ class User extends Authenticatable
     {
         return $this->role === 'admin';
     }
+
+    /**
+     * Perangkat IoT yang dapat diakses oleh user ini.
+     */
+    public function devices()
+    {
+        return $this->belongsToMany(Device::class)->withPivot('role')->withTimestamps();
+    }
 }

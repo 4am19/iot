@@ -253,6 +253,10 @@ export default {
     isDarkMode: {
       type: Boolean,
       default: true
+    },
+    deviceId: {
+      type: Number,
+      required: true
     }
   },
   data() {
@@ -316,6 +320,9 @@ export default {
         this.chart.destroy();
         this.updateChart();
       }
+    },
+    deviceId() {
+      this.fetchData();
     }
   },
   mounted() {
@@ -342,7 +349,7 @@ export default {
     },
     async fetchData() {
       try {
-        const response = await axios.get('/api/dashboard-data');
+        const response = await axios.get('/api/dashboard-data', { params: { device_id: this.deviceId } });
         if(response.data) {
           this.settings    = response.data.setting;
           this.latestData  = response.data.latestData || {};
@@ -488,7 +495,7 @@ export default {
       }
 
       try {
-        await axios.post('/api/update-setting', { is_auto_mode: newMode });
+        await axios.post('/api/update-setting', { is_auto_mode: newMode, device_id: this.deviceId });
         this.$emit('toast', {
           type: newMode ? 'success' : 'info',
           title: newMode ? 'Sistem Otomatis Aktif' : 'Sistem Manual Diambil Alih',
@@ -582,7 +589,7 @@ export default {
       };
 
       try {
-        await axios.post('/api/device/command', { command: action });
+        await axios.post('/api/device/command', { command: action, device_id: this.deviceId });
         this.$emit('toast', {
           type: 'info',
           title: '📡 Perintah Dikirim',

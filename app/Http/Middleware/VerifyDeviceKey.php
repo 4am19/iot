@@ -15,13 +15,15 @@ class VerifyDeviceKey
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $setting = \App\Models\DeviceSetting::first();
-        if ($setting && $setting->device_key) {
-           $key = $request->header('X-API-KEY') ?? $request->input('api_key');
-           if ($key !== $setting->device_key) {
-               return response()->json(['error' => 'Akses Perangkat Ditolak (API Key Invalid)'], 401);
-           }
+        $macAddress = $request->header('X-MAC-ADDRESS') ?? $request->input('mac_address');
+        
+        if (!$macAddress) {
+            return response()->json(['error' => 'Akses Ditolak (MAC Address tidak ditemukan)'], 401);
         }
+
+        // Simpan mac_address ke request untuk dipakai di controller
+        $request->merge(['mac_address' => $macAddress]);
+        
         return $next($request);
     }
 }

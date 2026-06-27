@@ -11,7 +11,7 @@
         <div class="relative z-10 bg-white/80 dark:bg-[#0a0e1a]/50 p-5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm dark:shadow-none w-full xl:w-auto min-w-[320px] transition-colors">
            <label class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block transition-colors">Identitas Administrator</label>
            <div class="flex gap-2">
-              <input type="text" v-model="settings.owner_name" @blur="saveSettings" @keyup.enter="saveSettings" placeholder="Nama Anda" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-inner dark:shadow-none">
+              <input type="text" v-model="settings.name" @blur="saveSettings" @keyup.enter="saveSettings" placeholder="Nama Perangkat" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-inner dark:shadow-none">
               <button @click="saveSettings" class="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-4 py-2.5 rounded-xl font-black hover:bg-indigo-100 dark:hover:bg-indigo-500/30 transition-colors active:scale-95 shadow-sm dark:shadow-none border border-indigo-100 dark:border-indigo-500/30">SIMPAN</button>
            </div>
         </div>
@@ -127,17 +127,17 @@
            </button>
         </div>
      </div>
-     <!-- Device API Key -->
+     <!-- Device MAC Address -->
      <div class="bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-none border border-slate-100 dark:border-white/10 flex flex-col md:flex-row items-center gap-6 group transition-colors duration-500">
         <div class="w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg border border-slate-700 flex-shrink-0 group-hover:scale-110 transition-transform">
            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
         </div>
         <div class="flex-1 text-center md:text-left">
-           <h4 class="font-black text-xl text-slate-800 dark:text-slate-100 tracking-tight transition-colors">Otentikasi Mesin (ESP32 API Key)</h4>
-           <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 transition-colors">Gunakan kunci rahasia ini sebagai Header <code class="bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded font-mono text-xs font-bold border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none transition-colors">X-API-KEY</code> di firmware C++ Anda.</p>
+           <h4 class="font-black text-xl text-slate-800 dark:text-slate-100 tracking-tight transition-colors">MAC Address (ID Mesin)</h4>
+           <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 transition-colors">Identitas unik perangkat ESP32 Anda.</p>
         </div>
         <div class="w-full md:w-auto relative">
-           <input type="text" readonly :value="settings.device_key || 'Generate via Seeder...'" class="w-full md:w-[360px] bg-slate-50 dark:bg-[#0a0e1a]/80 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 rounded-[1.25rem] pl-5 pr-14 py-4 font-mono font-bold tracking-widest focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-center shadow-inner dark:shadow-none transition-colors">
+           <input type="text" readonly :value="settings.mac_address || 'Tidak Tersedia'" class="w-full md:w-[360px] bg-slate-50 dark:bg-[#0a0e1a]/80 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 rounded-[1.25rem] pl-5 pr-14 py-4 font-mono font-bold tracking-widest focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-center shadow-inner dark:shadow-none transition-colors">
            <button @click="copyApiKey" class="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-white dark:bg-white/10 rounded-xl text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-white shadow-sm dark:shadow-none border border-slate-100 dark:border-white/5 active:scale-95 transition-all">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
            </button>
@@ -152,6 +152,12 @@ import axios from 'axios';
 
 export default {
   emits: ['toast'],
+  props: {
+    deviceId: {
+      type: Number,
+      required: true
+    }
+  },
   data() {
     return {
       isLoading: true,
@@ -160,7 +166,8 @@ export default {
         ldr_threshold: 50,
         rain_threshold: 5,
         manual_position: 'Terbuka',
-        owner_name: 'Administrator'
+        name: 'Jemuran',
+        mac_address: ''
       }
     }
   },
@@ -171,10 +178,15 @@ export default {
   unmounted() {
     clearInterval(this.polling);
   },
+  watch: {
+    deviceId() {
+      this.fetchData();
+    }
+  },
   methods: {
     async fetchData() {
       try {
-        const response = await axios.get('/api/dashboard-data');
+        const response = await axios.get('/api/dashboard-data', { params: { device_id: this.deviceId } });
         if(response.data) this.settings = response.data.setting;
       } catch (error) { console.error(error); }
       finally { this.isLoading = false; }
@@ -186,7 +198,8 @@ export default {
           ldr_threshold: this.settings.ldr_threshold,
           rain_threshold: this.settings.rain_threshold,
           manual_position: this.settings.manual_position,
-          owner_name: this.settings.owner_name,
+          name: this.settings.name,
+          device_id: this.deviceId
         };
         await axios.post('/api/update-setting', payload);
         this.$emit('toast', { type: 'success', title: 'Tersimpan!', message: 'Kalibrasi sensor berhasil diperbarui.' });
@@ -199,9 +212,9 @@ export default {
       await this.saveSettings();
     },
     copyApiKey() {
-       if (this.settings.device_key) {
-          navigator.clipboard.writeText(this.settings.device_key);
-          this.$emit('toast', { type: 'success', title: 'Tersalin', message: 'API Key disalin ke papan klip.' });
+       if (this.settings.mac_address) {
+          navigator.clipboard.writeText(this.settings.mac_address);
+          this.$emit('toast', { type: 'success', title: 'Tersalin', message: 'MAC Address disalin.' });
        }
     }
   }

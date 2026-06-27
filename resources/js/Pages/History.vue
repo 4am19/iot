@@ -104,6 +104,12 @@ import axios from 'axios';
 
 export default {
   emits: ['toast'],
+  props: {
+    deviceId: {
+      type: Number,
+      required: true
+    }
+  },
   data() {
     return {
       logs: [],
@@ -117,6 +123,11 @@ export default {
   unmounted() {
     clearInterval(this.polling);
   },
+  watch: {
+    deviceId() {
+      this.fetchLogs();
+    }
+  },
   methods: {
     formatDate(dateString) {
       if(!dateString) return '';
@@ -125,7 +136,7 @@ export default {
     },
     async fetchLogs() {
       try {
-        const response = await axios.get('/api/logs');
+        const response = await axios.get('/api/logs', { params: { device_id: this.deviceId } });
         if(response.data) {
           this.logs = response.data;
         }

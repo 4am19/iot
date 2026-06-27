@@ -63,6 +63,12 @@ import axios from 'axios';
 
 export default {
   emits: ['toast'],
+  props: {
+    deviceId: {
+      type: Number,
+      required: true
+    }
+  },
   data() {
     return {
       logs: [],
@@ -83,6 +89,11 @@ export default {
     this.fetchLogs();
     this.polling = setInterval(() => this.fetchLogs(true), 5000);
   },
+  watch: {
+    deviceId() {
+      this.fetchLogs();
+    }
+  },
   unmounted() {
     clearInterval(this.polling);
   },
@@ -95,7 +106,7 @@ export default {
     async fetchLogs(silent = false) {
       this.isRefreshing = true;
       try {
-        const response = await axios.get('/api/logs');
+        const response = await axios.get('/api/logs', { params: { device_id: this.deviceId } });
         if(response.data) this.logs = response.data;
         if (!this.isLoading && !silent) {
           this.$emit('toast', { type: 'success', title: 'Data Terbaru', message: `${this.filteredAlerts.length} peringatan ditemukan.` });

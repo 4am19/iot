@@ -41,6 +41,17 @@ Route::middleware('auth')->group(function () {
     Route::put('/api/users/{id}', [UserController::class, 'update']);
     Route::delete('/api/users/{id}', [UserController::class, 'destroy']);
     Route::post('/api/users/change-password', [UserController::class, 'changePassword']);
+
+    // -----------------------------------------------------------------------
+    // Multi-Tenant & Pairing
+    // -----------------------------------------------------------------------
+    Route::get('/api/devices', [\App\Http\Controllers\Api\DeviceController::class, 'index']);
+    Route::get('/api/devices/{id}', [\App\Http\Controllers\Api\DeviceController::class, 'show']);
+    Route::post('/api/devices/pair', [\App\Http\Controllers\Api\DeviceController::class, 'pair']);
+    Route::post('/api/devices/{id}/settings', [\App\Http\Controllers\Api\DeviceController::class, 'updateSetting']);
+    Route::get('/api/devices/{id}/members', [\App\Http\Controllers\Api\DeviceController::class, 'getMembers']);
+    Route::post('/api/devices/{id}/invite', [\App\Http\Controllers\Api\DeviceController::class, 'inviteMember']);
+    Route::delete('/api/devices/{id}/members/{memberId}', [\App\Http\Controllers\Api\DeviceController::class, 'removeMember']);
 });
 
 // =============================================================================

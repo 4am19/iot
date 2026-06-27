@@ -49,48 +49,39 @@
               </div>
 
               <div class="flex gap-3 w-full md:w-auto">
-                 <button @click="openModal(user)" class="flex-1 md:flex-none px-5 py-3 bg-white dark:bg-slate-800 text-blue-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none rounded-xl font-bold hover:bg-blue-50 dark:hover:bg-slate-700 hover:border-blue-200 dark:hover:border-slate-600 transition-colors">Edit</button>
-                 <button @click="deleteUser(user.id)" class="flex-1 md:flex-none px-5 py-3 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none rounded-xl font-bold hover:bg-rose-50 dark:hover:bg-slate-700 hover:border-rose-200 dark:hover:border-slate-600 transition-colors">Hapus</button>
+                 <div v-if="user.role === 'master'" class="px-5 py-3 text-sm font-bold text-slate-400">Master</div>
+                 <button v-else @click="deleteUser(user.id)" class="flex-1 md:flex-none px-5 py-3 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none rounded-xl font-bold hover:bg-rose-50 dark:hover:bg-slate-700 hover:border-rose-200 dark:hover:border-slate-600 transition-colors">Hapus Akses</button>
               </div>
            </div>
         </div>
      </div>
 
-     <!-- Modal Overlay (Glassmorphism) -->
+      <!-- Modal Overlay (Glassmorphism) -->
      <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
         <div v-if="isModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
            
            <div class="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-colors" @click="closeModal"></div>
            
            <div class="bg-white/90 dark:bg-[#0f172a]/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-lg relative z-10 shadow-2xl border border-white dark:border-white/10 overflow-hidden p-8 md:p-10 transform transition-all">
-              <div class="absolute top-0 right-0 w-32 h-32 bg-blue-100 dark:bg-indigo-500/20 opacity-50 rounded-full -mr-10 -mt-10 blur-2xl transition-colors"></div>
+              <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-100 dark:bg-emerald-500/20 opacity-50 rounded-full -mr-10 -mt-10 blur-2xl transition-colors"></div>
               
-              <h3 class="text-2xl font-black text-slate-800 dark:text-white mb-8 relative z-10 transition-colors">{{ form.id ? 'Edit Data Anggota' : 'Daftarkan Anggota Baru' }}</h3>
+              <h3 class="text-2xl font-black text-slate-800 dark:text-white mb-2 relative z-10 transition-colors">Undang Anggota</h3>
+              <p class="text-sm text-slate-500 mb-8 relative z-10">Masukkan email anggota keluarga. Pastikan mereka sudah mendaftar akun di web ini sebelumnya.</p>
               
-              <form @submit.prevent="saveUser" class="space-y-5 relative z-10">
+              <form @submit.prevent="inviteUser" class="space-y-5 relative z-10">
                  
                  <div v-if="errorMessage" class="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 px-4 py-3 rounded-xl text-sm font-bold border border-rose-100 dark:border-rose-800/50 transition-colors">{{ errorMessage }}</div>
 
                  <div class="space-y-1.5 relative">
-                    <label class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-2 transition-colors">Nama Lengkap</label>
-                    <input type="text" v-model="form.name" required placeholder="Mis. Istri Tersayang" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl px-5 py-3.5 font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-indigo-400 transition-all">
-                 </div>
-
-                 <div class="space-y-1.5 relative">
-                    <label class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-2 transition-colors">Alamat Email (Untuk Login)</label>
-                    <input type="email" v-model="form.email" required placeholder="keluarga@iot.com" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl px-5 py-3.5 font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-indigo-400 transition-all">
-                 </div>
-
-                 <div class="space-y-1.5 relative">
-                    <label class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-2 transition-colors">Sandi Rahasia {{ form.id ? '(Kosongkan jika tidak diubah)' : '' }}</label>
-                    <input type="password" v-model="form.password" :required="!form.id" placeholder="Minimal 4 karakter" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl px-5 py-3.5 font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-indigo-400 transition-all">
+                    <label class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-2 transition-colors">Alamat Email Terdaftar</label>
+                    <input type="email" v-model="form.email" required placeholder="keluarga@iot.com" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl px-5 py-3.5 font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-emerald-400 transition-all">
                  </div>
 
                  <div class="pt-6 flex gap-3">
                     <button type="button" @click="closeModal" class="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl font-black hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">BATAL</button>
-                    <button type="submit" :disabled="isSaving" class="flex-1 flex justify-center items-center py-4 bg-blue-600 text-white rounded-xl shadow-[0_5px_15px_rgba(37,99,235,0.3)] hover:shadow-[0_5px_20px_rgba(37,99,235,0.4)] font-black transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed">
+                    <button type="submit" :disabled="isSaving" class="flex-1 flex justify-center items-center py-4 bg-emerald-600 text-white rounded-xl shadow-[0_5px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_5px_20px_rgba(16,185,129,0.4)] font-black transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed">
                        <svg v-if="isSaving" class="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                       {{ isSaving ? 'MEMPROSES...' : 'SIMPAN' }}
+                       {{ isSaving ? 'MEMPROSES...' : 'KIRIM UNDANGAN' }}
                     </button>
                  </div>
               </form>
@@ -106,6 +97,12 @@ import axios from 'axios';
 
 export default {
   emits: ['toast'],
+  props: {
+    deviceId: {
+      type: Number,
+      required: true
+    }
+  },
   data() {
     return {
       users: [],
@@ -113,72 +110,63 @@ export default {
       isModalOpen: false,
       isSaving: false,
       errorMessage: '',
-      form: {
-        id: null,
-        name: '',
-        email: '',
-        password: ''
-      }
+      form: { email: '' }
     }
   },
   mounted() {
     this.fetchUsers();
   },
+  watch: {
+    deviceId() {
+      this.fetchUsers();
+    }
+  },
   methods: {
     async fetchUsers() {
       this.isLoading = true;
       try {
-         const response = await axios.get('/api/users');
+         const response = await axios.get(`/api/devices/${this.deviceId}/members`);
          this.users = response.data;
       } catch (error) {
          console.error(error);
-         this.$emit('toast', { type: 'error', title: 'Gagal', message: 'Tidak dapat memuat data pengguna.' });
+         this.$emit('toast', { type: 'error', title: 'Gagal', message: 'Tidak dapat memuat data anggota.' });
       } finally {
          this.isLoading = false;
       }
     },
-    openModal(user = null) {
+    openModal() {
        this.errorMessage = '';
-       if (user) {
-          this.form = { id: user.id, name: user.name, email: user.email, password: '' };
-       } else {
-          this.form = { id: null, name: '', email: '', password: '' };
-       }
+       this.form = { email: '' };
        this.isModalOpen = true;
     },
     closeModal() {
        this.isModalOpen = false;
     },
-    async saveUser() {
+    async inviteUser() {
        this.isSaving = true;
        this.errorMessage = '';
        
        try {
-          if (this.form.id) {
-             await axios.put(`/api/users/${this.form.id}`, this.form);
-             this.$emit('toast', { type: 'success', title: 'Diperbarui', message: 'Data pengguna berhasil diubah.' });
-          } else {
-             await axios.post('/api/users', this.form);
-             this.$emit('toast', { type: 'success', title: 'Berhasil', message: 'Anggota keluarga baru ditambahkan!' });
-          }
+          await axios.post(`/api/devices/${this.deviceId}/invite`, this.form);
+          this.$emit('toast', { type: 'success', title: 'Berhasil', message: 'Anggota keluarga berhasil diundang!' });
           this.closeModal();
           this.fetchUsers();
        } catch (error) {
-          if (error.response && error.response.data && error.response.data.message) {
-             this.errorMessage = error.response.data.message; // validation errors from backend usually
+          if (error.response && error.response.data && error.response.data.error) {
+             this.errorMessage = error.response.data.error;
           } else {
-             this.errorMessage = 'Terjadi kesalahan sistem.';
+             this.errorMessage = 'Terjadi kesalahan sistem atau user tidak ditemukan.';
           }
        } finally {
           this.isSaving = false;
        }
     },
-    async deleteUser(id) {
-       if (!confirm('Anda yakin ingin menghapus izin akses anggota ini secara permanen?')) return;
+    async deleteUser(userId) {
+       if (!confirm('Anda yakin ingin mencabut akses anggota ini ke perangkat?')) return;
        
        try {
-          await axios.delete(`/api/users/${id}`);
-          this.$emit('toast', { type: 'success', title: 'Terhapus', message: 'Akses pengguna telah dicabut.' });
+          await axios.delete(`/api/devices/${this.deviceId}/members/${userId}`);
+          this.$emit('toast', { type: 'success', title: 'Terhapus', message: 'Akses pengguna telah dicabut dari perangkat ini.' });
           this.fetchUsers();
        } catch (error) {
           if (error.response && error.response.data && error.response.data.error) {

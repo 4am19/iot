@@ -10,6 +10,8 @@
 
   <LoginVue v-else-if="!isAuthenticated" @login-success="onLoginSuccess" />
 
+  <SetupDeviceVue v-else-if="!hasDevices" @paired="onDevicePaired" />
+
   <div v-else class="flex h-screen font-sans text-slate-800 dark:text-slate-200 overflow-hidden relative transition-colors duration-500" :class="isDarkMode ? 'bg-[#0a0e1a]' : 'bg-slate-50'">
     
     <!-- Animated Grid Background -->
@@ -70,8 +72,12 @@
                   </div>
                   
                   <div class="flex-1 min-w-0">
-                     <p class="font-bold text-slate-800 dark:text-slate-100 text-[13px] truncate transition-colors" :title="ownerName">{{ ownerName }}</p>
-                     <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest transition-colors">Administrator</p>
+                     <select v-if="devices.length > 1" v-model="activeDeviceId" @change="fetchGlobalData" class="w-full bg-transparent font-bold text-slate-800 dark:text-slate-100 text-[13px] truncate outline-none appearance-none cursor-pointer">
+                        <option v-for="dev in devices" :key="dev.id" :value="dev.id" class="text-slate-800">{{ dev.name || 'Jemuran ' + dev.id }}</option>
+                     </select>
+                     <p v-else class="font-bold text-slate-800 dark:text-slate-100 text-[13px] truncate transition-colors" :title="ownerName">{{ ownerName }}</p>
+                     
+                     <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest transition-colors">Perangkat Aktif</p>
                   </div>
 
                   <button @click="logout" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors border border-transparent hover:border-rose-100 dark:hover:border-rose-500/20 flex-shrink-0" title="Keluar">
@@ -144,7 +150,7 @@
       <!-- Dynamic Page Rendering Container -->
       <main class="flex-1 overflow-x-hidden overflow-y-auto w-full relative p-4 md:p-6 lg:p-8">
           <transition name="page-slide" mode="out-in">
-             <component :is="activePageComponent" @toast="showToast" :isDarkMode="isDarkMode"></component>
+             <component :is="activePageComponent" @toast="showToast" :isDarkMode="isDarkMode" :deviceId="activeDeviceId"></component>
           </transition>
       </main>
     </div>
@@ -174,10 +180,11 @@ import SettingsVue from './Pages/Settings.vue';
 import NotificationsVue from './Pages/Notifications.vue';
 import UsersVue from './Pages/Users.vue';
 import LoginVue from './Pages/Login.vue';
+import SetupDeviceVue from './Pages/SetupDevice.vue';
 import axios from 'axios';
 
 export default {
-  components: { LoginVue },
+  components: { LoginVue, SetupDeviceVue },
   data() {
     return {
       activePage: 'dashboard',
@@ -190,6 +197,9 @@ export default {
       isAuthenticated: false,
       isAuthReady: false,
       isDarkMode: true,
+      hasDevices: true,
+      devices: [],
+      activeDeviceId: null,
       toast: {
         visible: false,
         type: 'success',
@@ -291,7 +301,9 @@ export default {
     },
     onLoginSuccess(user) {
        this.isAuthenticated = true;
-       this.startDashboard();
+       this.fetchDevices().then(() => {
+          this.startDashboard();
+       });
        this.showToast({ type: 'success', title: 'Selamat Datang', message: 'Otentikasi berhasil.' });
     },
     async logout() {
@@ -305,11 +317,32 @@ export default {
        }
     },
     startDashboard() {
-       this.fetchGlobalData();
-       // Hanya jalankan interval jika belum pernah dijalankan agar tidak bertumpuk
-       if (!this.globalPolling) {
-          this.globalPolling = setInterval(this.fetchGlobalData, 5000);
-       }
+       this.fetchDevices().then(() => {
+         this.fetchGlobalData();
+         if (!this.globalPolling) {
+            this.globalPolling = setInterval(this.fetchGlobalData, 5000);
+         }
+       });
+    },
+    async fetchDevices() {
+      try {
+        const res = await axios.get('/api/devices');
+        this.devices = res.data;
+        if (this.devices.length > 0 && !this.activeDeviceId) {
+           this.activeDeviceId = this.devices[0].id;
+           this.hasDevices = true;
+        } else if (this.devices.length === 0) {
+           this.hasDevices = false;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    onDevicePaired() {
+      this.showToast({ type: 'success', title: 'Berhasil', message: 'Perangkat berhasil dipasangkan!' });
+      this.fetchDevices().then(() => {
+        this.fetchGlobalData();
+      });
     },
     showToast({ type = 'success', title = '', message = '' }) {
       if (this.toast.timeout) clearTimeout(this.toast.timeout);
@@ -320,27 +353,35 @@ export default {
       }, 100);
     },
     async fetchGlobalData() {
+       if (!this.hasDevices && this.isAuthenticated) return;
        try {
-          const response = await axios.get('/api/dashboard-data');
+          const response = await axios.get('/api/dashboard-data', {
+            params: { device_id: this.activeDeviceId }
+          });
           if (response.data) {
-             this.ownerName = response.data.setting.owner_name || 'Administrator';
+             this.hasDevices = true;
+             this.ownerName = response.data.setting.name || response.data.setting.owner_name || 'Jemuran Pintar';
              
-             if (response.data.latestData && response.data.latestData.created_at) {
+             if (response.data.latestData && response.data.latestData.updated_at) {
                 // Konversi UTC dari backend ke Date object lokal
                 const now = new Date();
-                const lastUpdate = new Date(response.data.latestData.created_at);
+                const lastUpdate = new Date(response.data.latestData.updated_at);
                 const diffSeconds = (now - lastUpdate) / 1000;
                 
                 // Toleransi 120 detik (karena sistem polling & delay internet/ngrok)
                 this.esp32Online = diffSeconds <= 120;
              } else {
-                this.esp32Online = false;
-             }
-          }
-       } catch (e) {
-          console.error("Gagal sinkron data global", e);
-          this.esp32Online = false;
-       }
+                 this.esp32Online = false;
+              }
+           }
+        } catch (e) {
+           if (e.response && e.response.status === 404) {
+              this.hasDevices = false;
+           } else {
+              console.error("Gagal sinkron data global", e);
+           }
+           this.esp32Online = false;
+        }
     }
   }
 }
