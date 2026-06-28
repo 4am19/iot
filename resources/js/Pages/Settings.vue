@@ -149,6 +149,7 @@
 
 <script>
 import axios from 'axios';
+import { database, ref as dbRef, set } from '../firebase';
 
 export default {
   emits: ['toast'],
@@ -202,6 +203,17 @@ export default {
           device_id: this.deviceId
         };
         await axios.post('/api/update-setting', payload);
+
+        // Push ke Firebase agar sinkron realtime ke ESP32
+        if (this.settings.mac_address) {
+           await set(dbRef(database, 'devices/' + this.settings.mac_address + '/settings'), {
+              is_auto_mode: this.settings.is_auto_mode,
+              ldr_threshold: this.settings.ldr_threshold,
+              rain_threshold: this.settings.rain_threshold,
+              timestamp: Date.now()
+           });
+        }
+
         this.$emit('toast', { type: 'success', title: 'Tersimpan!', message: 'Kalibrasi sensor berhasil diperbarui.' });
       } catch (error) { 
         this.$emit('toast', { type: 'error', title: 'Gagal!', message: 'Tidak bisa menyimpan pengaturan.' });
