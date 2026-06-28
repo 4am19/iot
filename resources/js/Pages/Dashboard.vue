@@ -245,6 +245,7 @@
 <script>
 import axios from 'axios';
 import { Chart, registerables } from 'chart.js';
+import { database, ref as dbRef, onValue, set } from '../firebase';
 Chart.register(...registerables);
 
 export default {
@@ -278,6 +279,9 @@ export default {
       bleDevice: null,
       bleCharacteristic: null,
       isBleConnected: false,
+      // Firebase State
+      firebaseInitialized: false,
+      unsubscribeFirebase: null,
     }
   },
   computed: {
@@ -322,6 +326,7 @@ export default {
       }
     },
     deviceId() {
+      this.firebaseInitialized = false;
       this.fetchData();
     }
   },
@@ -332,6 +337,7 @@ export default {
   unmounted() {
     clearInterval(this.polling);
     if (this.chart) this.chart.destroy();
+    if (this.unsubscribeFirebase) this.unsubscribeFirebase();
   },
   methods: {
     animateCounter(prop, target) {
@@ -369,8 +375,47 @@ export default {
 
           // Update chart
           this.$nextTick(() => { this.updateChart(); });
+
+          // Setup Firebase if not yet initialized for this device
+          if (this.settings.mac_address && !this.firebaseInitialized) {
+             this.setupFirebaseListener();
+             this.firebaseInitialized = true;
+          }
         }
       } catch (error) { console.error(error); this.isLoading = false; }
+    },
+    setupFirebaseListener() {
+      if (!this.settings.mac_address) return;
+      const mac = this.settings.mac_address;
+      const sensorRef = dbRef(database, 'devices/' + mac + '/sensors');
+      
+      if (this.unsubscribeFirebase) {
+         this.unsubscribeFirebase(); // Unsubscribe prev listener if device changed
+      }
+
+      this.unsubscribeFirebase = onValue(sensorRef, (snapshot) => {
+         const data = snapshot.val();
+         if (data) {
+            // Update realtime data on UI instantly
+            if (data.ldr_value !== undefined && data.ldr_value !== this.targetLdr) {
+               this.targetLdr = data.ldr_value;
+               this.animateCounter('displayLdr', data.ldr_value);
+            }
+            if (data.rain_percentage !== undefined && data.rain_percentage !== this.targetRain) {
+               this.targetRain = data.rain_percentage;
+               this.animateCounter('displayRain', data.rain_percentage);
+            }
+            if (data.clothesline_status) {
+               this.latestData.clothesline_status = data.clothesline_status;
+            }
+            if (data.weather_condition) {
+               this.latestData.weather_condition = data.weather_condition;
+            }
+            if (data.updated_at) {
+               this.latestData.updated_at = data.updated_at;
+            }
+         }
+      });
     },
     updateChart() {
       const canvas = this.$refs.sensorChart;
@@ -495,7 +540,17 @@ export default {
       }
 
       try {
+        // Update di server
         await axios.post('/api/update-setting', { is_auto_mode: newMode, device_id: this.deviceId });
+        
+        // Push instant update ke Firebase
+        if (this.settings.mac_address) {
+           set(dbRef(database, 'devices/' + this.settings.mac_address + '/settings'), {
+              is_auto_mode: newMode,
+              timestamp: Date.now()
+           });
+        }
+
         this.$emit('toast', {
           type: newMode ? 'success' : 'info',
           title: newMode ? 'Sistem Otomatis Aktif' : 'Sistem Manual Diambil Alih',
@@ -589,20 +644,32 @@ export default {
       };
 
       try {
-        await axios.post('/api/device/command', { command: action, device_id: this.deviceId });
+        // Fallback untuk history ke server (async tanpa await di UI response jika firebase nyala)
+        axios.post('/api/device/command', { command: action, device_id: this.deviceId }).catch(e => console.error(e));
+
+        // PUSH REALTIME KE FIREBASE 🔥
+        if (this.settings.mac_address) {
+           await set(dbRef(database, 'devices/' + this.settings.mac_address + '/command'), {
+              action: action,
+              timestamp: Date.now()
+           });
+        }
+
+        this.isSendingCommand = false;
+        this.pendingCommand = null;
+
         this.$emit('toast', {
           type: 'info',
-          title: '📡 Perintah Dikirim',
-          message: `Perintah "${labels[action]}" sedang menunggu ESP32. Akan dieksekusi dalam ≤10 detik.`
+          title: '📡 Perintah Firebase Terkirim',
+          message: `Perintah "${labels[action]}" terkirim. ESP32 akan mengeksekusi secara instan.`
         });
-        // Segera refresh untuk tampilkan badge "Mengirim perintah..."
-        this.fetchData();
+        
       } catch (error) {
         this.isSendingCommand = false;
         this.$emit('toast', {
           type: 'error',
           title: 'Gagal Kirim Perintah',
-          message: 'Tidak dapat menghubungi server. Cek koneksi Anda.'
+          message: 'Gagal menghubungi Firebase. Cek koneksi Anda.'
         });
       }
     }
