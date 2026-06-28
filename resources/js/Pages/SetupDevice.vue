@@ -57,35 +57,61 @@ export default {
   },
   methods: {
     async scanBluetooth() {
+      if (!navigator.bluetooth) {
+        this.errorMsg = 'Browser ini tidak mendukung Web Bluetooth. Gunakan Chrome/Edge di Android atau Desktop.';
+        return;
+      }
       try {
         this.loading = true;
         this.errorMsg = '';
+
+        // Gunakan namePrefix agar lebih fleksibel + filter Service UUID
         const device = await navigator.bluetooth.requestDevice({
-          filters: [{ name: 'Jemuran Pintar IoT' }],
+          filters: [
+            { namePrefix: 'Jemuran' },
+            { services: ['0000ffe0-0000-1000-8000-00805f9b34fb'] }
+          ],
           optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
         });
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+
+        this.errorMsg = '';
         
-        // Membaca characteristic khusus MAC Address (FFE2)
-        const characteristic = await service.getCharacteristic('0000ffe2-0000-1000-8000-00805f9b34fb');
-        const value = await characteristic.readValue();
-        const decoder = new TextDecoder('utf-8');
-        const mac = decoder.decode(value);
-        
-        this.form.mac_address = mac;
-        
-        // Disconnect after reading
-        if (device.gatt.connected) {
-          device.gatt.disconnect();
+        // Coba baca MAC Address dari characteristic khusus
+        try {
+          const server = await device.gatt.connect();
+          const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+          const characteristic = await service.getCharacteristic('0000ffe2-0000-1000-8000-00805f9b34fb');
+          const value = await characteristic.readValue();
+          const mac = new TextDecoder('utf-8').decode(value);
+          
+          if (mac && mac.includes(':')) {
+            this.form.mac_address = mac.trim();
+          } else {
+            this.form.mac_address = device.id; // fallback ke ID BLE
+          }
+          
+          if (device.gatt.connected) device.gatt.disconnect();
+        } catch (gattErr) {
+          // Jika gagal baca GATT, gunakan device.id sebagai identifier
+          console.warn('Tidak bisa baca characteristic MAC, menggunakan ID BLE:', gattErr);
+          this.form.mac_address = device.id;
+          this.errorMsg = 'Perangkat ditemukan! Namun MAC Address tidak terbaca otomatis. Silakan lihat Serial Monitor Arduino IDE untuk MAC Address yang benar.';
         }
+        
       } catch (error) {
         console.error(error);
-        this.errorMsg = 'Gagal memindai Bluetooth. Pastikan Bluetooth dan Lokasi aktif, dan jemuran menyala.';
+        if (error.name === 'NotFoundError') {
+          this.errorMsg = '⚠️ Tidak ada perangkat ditemukan. Tips: (1) Pastikan ESP32 sudah dinyalakan. (2) Jika "Jemuran Pintar IoT" muncul di pengaturan Bluetooth Windows/HP, hapus dulu dari sana, lalu coba Cari Otomatis lagi.';
+        } else if (error.name === 'SecurityError') {
+          this.errorMsg = 'Akses Bluetooth ditolak. Pastikan Bluetooth dan GPS aktif.';
+        } else {
+          this.errorMsg = 'Gagal scan: ' + error.message;
+        }
       } finally {
         this.loading = false;
       }
     },
+
     async pairDevice() {
       this.loading = true;
       this.errorMsg = '';
