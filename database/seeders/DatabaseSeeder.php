@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\DeviceSetting;
 use App\Models\SensorLog;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -29,20 +28,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // =====================================================
-        // 2. Inisialisasi Pengaturan Dasar Perangkat
-        // =====================================================
-        DeviceSetting::firstOrCreate(
-            ['id' => 1],
-            [
-                'is_auto_mode'    => true,
-                'ldr_threshold'   => 50,
-                'rain_threshold'  => 5,
-                'manual_position' => 'Di Luar (Menjemur)',
-                'device_key'      => 'e6b69b1c94024fbd2b3a047e80cc43c1',
-            ]
-        );
-
-        // Dummy data SensorLog telah dihapus sesuai permintaan.
+        // Catatan: Pengaturan perangkat (Device) kini dibuat secara dinamis 
+        // melalui fitur "Tambah Perangkat" di Frontend (SetupDevice).
     }
 }
