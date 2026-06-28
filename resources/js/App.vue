@@ -367,12 +367,28 @@ export default {
       
       const sensorRef = dbRef(database, 'devices/' + mac + '/sensors');
       this.firebaseOnlineRef = sensorRef;
+      let lastSeenUpdatedAt = null;  // Nilai updated_at terakhir yang terlihat
+      let firstLoad = true;          // Flag untuk abaikan data pertama (mungkin stale)
       
       onValue(sensorRef, (snapshot) => {
         const data = snapshot.val();
-        if (data && data.updated_at) {
-          this.lastFirebaseUpdate = Date.now(); // catat waktu terakhir data masuk
-          this.esp32Online = true;
+        if (data) {
+          const currentUpdatedAt = data.updated_at;
+          
+          if (firstLoad) {
+            // Data pertama: simpan nilainya tapi jangan langsung tandai online
+            // karena ini mungkin data lama (stale cache Firebase)
+            lastSeenUpdatedAt = currentUpdatedAt;
+            firstLoad = false;
+            // Tandai sementara sebagai online, akan dikoreksi oleh interval jika tidak ada perubahan
+            this.lastFirebaseUpdate = Date.now();
+            this.esp32Online = true;
+          } else if (currentUpdatedAt !== lastSeenUpdatedAt) {
+            // Nilai berubah = ESP32 aktif mengirim data!
+            lastSeenUpdatedAt = currentUpdatedAt;
+            this.lastFirebaseUpdate = Date.now();
+            this.esp32Online = true;
+          }
         }
       });
     },
