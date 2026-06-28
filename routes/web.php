@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/devices/{id}/members', [\App\Http\Controllers\Api\DeviceController::class, 'getMembers']);
     Route::post('/api/devices/{id}/invite', [\App\Http\Controllers\Api\DeviceController::class, 'inviteMember']);
     Route::delete('/api/devices/{id}/members/{memberId}', [\App\Http\Controllers\Api\DeviceController::class, 'removeMember']);
+    Route::delete('/api/devices/{id}/unpair', [\App\Http\Controllers\Api\DeviceController::class, 'unpair']);
 });
 
 // =============================================================================

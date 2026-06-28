@@ -159,4 +159,29 @@ class DeviceController extends Controller
         $members = $device->users()->select('users.id', 'users.name', 'users.email', 'device_user.role', 'device_user.created_at')->get();
         return response()->json($members);
     }
+
+    /**
+     * Hapus penyandinganan (unpair) perangkat dari akun user.
+     * Jika tidak ada user lain yang menggunakan perangkat ini, perangkat dihapus total.
+     */
+    public function unpair($id)
+    {
+        $user = Auth::user();
+        $device = $user->devices()->where('device_id', $id)->first();
+
+        if (!$device) {
+            return response()->json(['error' => 'Perangkat tidak ditemukan.'], 404);
+        }
+
+        // Cabut akses user ini dari perangkat
+        $user->devices()->detach($device->id);
+
+        // Jika tidak ada user lain yang memiliki perangkat ini, hapus datanya
+        if ($device->users()->count() === 0) {
+            $device->delete();
+        }
+
+        return response()->json(['status' => 'success', 'message' => 'Perangkat berhasil dilepas dari akun Anda.']);
+    }
 }
+

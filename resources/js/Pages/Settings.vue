@@ -143,6 +143,22 @@
            </button>
         </div>
      </div>
+
+     <!-- ⚠️ DANGER ZONE — Hapus Penyandinganan -->
+     <div class="bg-rose-50/80 dark:bg-rose-500/5 backdrop-blur-xl p-8 rounded-[2rem] border border-rose-200 dark:border-rose-500/20 flex flex-col md:flex-row items-center gap-6 transition-colors duration-500">
+        <div class="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg flex-shrink-0">
+           <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+        <div class="flex-1 text-center md:text-left">
+           <h4 class="font-black text-xl text-rose-700 dark:text-rose-400 tracking-tight">Hapus Penyandinganan Perangkat</h4>
+           <p class="text-sm font-medium text-rose-600/70 dark:text-rose-400/60 mt-1">Melepas koneksi akun Anda dari perangkat ini. Data riwayat akan tetap tersimpan. Untuk menggunakannya lagi, Anda perlu melakukan setup ulang dari awal.</p>
+        </div>
+        <button @click="unpairDevice" :disabled="isUnpairing" class="flex-shrink-0 px-6 py-3 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white rounded-xl font-black shadow-lg shadow-rose-500/30 transition-all active:scale-95 flex items-center gap-2">
+           <svg v-if="isUnpairing" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+           <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+           {{ isUnpairing ? 'Memproses...' : 'Lepas Perangkat' }}
+        </button>
+     </div>
      </template>
   </div>
 </template>
@@ -162,6 +178,7 @@ export default {
   data() {
     return {
       isLoading: true,
+      isUnpairing: false,
       settings: {
         is_auto_mode: true,
         ldr_threshold: 50,
@@ -228,6 +245,22 @@ export default {
           navigator.clipboard.writeText(this.settings.mac_address);
           this.$emit('toast', { type: 'success', title: 'Tersalin', message: 'MAC Address disalin.' });
        }
+    },
+    async unpairDevice() {
+      const confirmed = window.confirm('Apakah Anda yakin ingin melepas perangkat ini dari akun Anda? Anda perlu setup ulang untuk menggunakannya lagi.');
+      if (!confirmed) return;
+      
+      this.isUnpairing = true;
+      try {
+        await axios.delete(`/api/devices/${this.deviceId}/unpair`);
+        this.$emit('toast', { type: 'success', title: 'Berhasil Dilepas', message: 'Perangkat berhasil dilepas. Anda akan diarahkan ke halaman setup.' });
+        // Reload halaman agar kembali ke SetupDevice
+        setTimeout(() => { window.location.reload(); }, 1500);
+      } catch (error) {
+        this.$emit('toast', { type: 'error', title: 'Gagal', message: error.response?.data?.error || 'Terjadi kesalahan.' });
+      } finally {
+        this.isUnpairing = false;
+      }
     }
   }
 }
