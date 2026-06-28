@@ -13,7 +13,14 @@
       <form @submit.prevent="pairDevice" class="space-y-5">
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">MAC Address / ID Perangkat</label>
-          <input v-model="form.mac_address" type="text" required placeholder="Contoh: A1:B2:C3:D4:E5:F6" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white transition-all outline-none">
+          <div class="relative">
+            <input v-model="form.mac_address" type="text" required placeholder="Contoh: A1:B2:C3:D4:E5:F6" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white transition-all outline-none">
+            <button type="button" @click="scanBluetooth" class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-bold hover:bg-indigo-200 dark:hover:bg-indigo-500/30 transition-colors flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Cari Otomatis
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1.5">Klik Cari Otomatis untuk memindai lewat Bluetooth HP/Laptop.</p>
         </div>
         
         <div>
@@ -49,6 +56,36 @@ export default {
     }
   },
   methods: {
+    async scanBluetooth() {
+      try {
+        this.loading = true;
+        this.errorMsg = '';
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ name: 'Jemuran Pintar IoT' }],
+          optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+        });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+        
+        // Membaca characteristic khusus MAC Address (FFE2)
+        const characteristic = await service.getCharacteristic('0000ffe2-0000-1000-8000-00805f9b34fb');
+        const value = await characteristic.readValue();
+        const decoder = new TextDecoder('utf-8');
+        const mac = decoder.decode(value);
+        
+        this.form.mac_address = mac;
+        
+        // Disconnect after reading
+        if (device.gatt.connected) {
+          device.gatt.disconnect();
+        }
+      } catch (error) {
+        console.error(error);
+        this.errorMsg = 'Gagal memindai Bluetooth. Pastikan Bluetooth dan Lokasi aktif, dan jemuran menyala.';
+      } finally {
+        this.loading = false;
+      }
+    },
     async pairDevice() {
       this.loading = true;
       this.errorMsg = '';
