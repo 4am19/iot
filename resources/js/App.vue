@@ -182,6 +182,8 @@ import UsersVue from './Pages/Users.vue';
 import LoginVue from './Pages/Login.vue';
 import SetupDeviceVue from './Pages/SetupDevice.vue';
 import axios from 'axios';
+import { database } from './firebase.js';
+import { ref as dbRef, onValue, off } from 'firebase/database';
 
 export default {
   components: { LoginVue, SetupDeviceVue },
@@ -200,6 +202,10 @@ export default {
       hasDevices: true,
       devices: [],
       activeDeviceId: null,
+      currentMacAddress: null,       // MAC perangkat aktif
+      firebaseOnlineRef: null,       // Firebase listener untuk status online
+      lastFirebaseUpdate: null,      // Waktu terakhir data Firebase diterima
+      onlineCheckInterval: null,     // Interval cek apakah Firebase masih aktif
       toast: {
         visible: false,
         type: 'success',
@@ -263,6 +269,8 @@ export default {
   unmounted() {
     clearInterval(this.clockInterval);
     clearInterval(this.globalPolling);
+    clearInterval(this.onlineCheckInterval);
+    this.stopFirebaseOnlineListener();
   },
   methods: {
     navigateTo(page) {
@@ -320,7 +328,16 @@ export default {
        this.fetchDevices().then(() => {
          this.fetchGlobalData();
          if (!this.globalPolling) {
-            this.globalPolling = setInterval(this.fetchGlobalData, 5000);
+            this.globalPolling = setInterval(this.fetchGlobalData, 10000);
+         }
+         // Cek online setiap 5 detik berdasarkan waktu Firebase terakhir
+         if (!this.onlineCheckInterval) {
+           this.onlineCheckInterval = setInterval(() => {
+             if (this.lastFirebaseUpdate) {
+               const diffSeconds = (Date.now() - this.lastFirebaseUpdate) / 1000;
+               this.esp32Online = diffSeconds <= 15; // Online jika update < 15 detik lalu
+             }
+           }, 3000);
          }
        });
     },
@@ -337,6 +354,27 @@ export default {
       } catch (e) {
         console.error(e);
       }
+    },
+    stopFirebaseOnlineListener() {
+      if (this.firebaseOnlineRef) {
+        off(this.firebaseOnlineRef);
+        this.firebaseOnlineRef = null;
+      }
+    },
+    setupFirebaseOnlineListener(mac) {
+      this.stopFirebaseOnlineListener();
+      if (!mac) return;
+      
+      const sensorRef = dbRef(database, 'devices/' + mac + '/sensors');
+      this.firebaseOnlineRef = sensorRef;
+      
+      onValue(sensorRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.updated_at) {
+          this.lastFirebaseUpdate = Date.now(); // catat waktu terakhir data masuk
+          this.esp32Online = true;
+        }
+      });
     },
     onDevicePaired() {
       this.showToast({ type: 'success', title: 'Berhasil', message: 'Perangkat berhasil dipasangkan!' });
@@ -362,26 +400,20 @@ export default {
              this.hasDevices = true;
              this.ownerName = response.data.setting.name || response.data.setting.owner_name || 'Jemuran Pintar';
              
-             if (response.data.latestData && response.data.latestData.updated_at) {
-                // Konversi UTC dari backend ke Date object lokal
-                const now = new Date();
-                const lastUpdate = new Date(response.data.latestData.updated_at);
-                const diffSeconds = (now - lastUpdate) / 1000;
-                
-                // Toleransi 120 detik (karena sistem polling & delay internet/ngrok)
-                this.esp32Online = diffSeconds <= 120;
-             } else {
-                 this.esp32Online = false;
-              }
-           }
-        } catch (e) {
-           if (e.response && e.response.status === 404) {
-              this.hasDevices = false;
-           } else {
-              console.error("Gagal sinkron data global", e);
-           }
-           this.esp32Online = false;
-        }
+             // Setup Firebase listener jika MAC address baru
+             const mac = response.data.setting.mac_address;
+             if (mac && mac !== this.currentMacAddress) {
+               this.currentMacAddress = mac;
+               this.setupFirebaseOnlineListener(mac);
+             }
+          }
+       } catch (e) {
+          if (e.response && e.response.status === 404) {
+             this.hasDevices = false;
+          } else {
+             console.error("Gagal sinkron data global", e);
+          }
+       }
     }
   }
 }
