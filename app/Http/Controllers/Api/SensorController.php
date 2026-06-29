@@ -57,6 +57,7 @@ class SensorController extends Controller
             'rain_percentage'    => 'required|numeric',
             'weather_condition'  => 'required|string',
             'clothesline_status' => 'required|string',
+            'is_auto_mode'       => 'nullable|boolean',
         ]);
 
         $latestLog = SensorLog::latest()->first();
@@ -70,6 +71,16 @@ class SensorController extends Controller
 
         // Ambil settings terbaru
         $setting = DeviceSetting::first();
+
+        // Update mode and position if ESP32 physical button was pressed (Manual Override)
+        if ($request->has('is_auto_mode') && $setting) {
+            if ($setting->is_auto_mode !== $validated['is_auto_mode'] || (!$validated['is_auto_mode'] && $setting->manual_position !== $validated['clothesline_status'])) {
+                $setting->update([
+                    'is_auto_mode'    => $validated['is_auto_mode'],
+                    'manual_position' => $validated['is_auto_mode'] ? $setting->manual_position : $validated['clothesline_status']
+                ]);
+            }
+        }
 
         // Ambil perintah tertunda (belum dieksekusi) — yang paling baru
         $pendingCommand = CommandQueue::where('executed', false)
@@ -180,7 +191,7 @@ class SensorController extends Controller
     public function pushCommand(Request $request)
     {
         $validated = $request->validate([
-            'command' => 'required|string|in:move_in,move_out,set_auto,set_manual,reboot',
+            'command' => 'required|string|in:move_in,move_out,set_auto,set_manual,reboot,reset_wifi',
             'payload' => 'nullable|array',
         ]);
 

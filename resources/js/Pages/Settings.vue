@@ -143,6 +143,39 @@
            </button>
         </div>
      </div>
+
+     <!-- Danger Zone: Reset WiFi -->
+     <div class="bg-rose-50/50 dark:bg-rose-950/20 backdrop-blur-xl p-8 rounded-[2rem] border border-rose-200 dark:border-rose-900/50 flex flex-col md:flex-row justify-between items-center gap-8 relative overflow-hidden transition-all duration-500 mt-12">
+        <div class="absolute right-0 bottom-0 w-64 h-64 bg-rose-500/10 rounded-full blur-[80px] pointer-events-none transition-colors"></div>
+        <div class="relative z-10 flex items-center gap-6 md:w-2/3">
+           <div class="w-16 h-16 bg-gradient-to-br from-rose-500 to-red-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg shadow-rose-500/30 flex-shrink-0">
+              <svg class="w-8 h-8 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+           </div>
+           <div>
+              <h4 class="font-black text-xl text-rose-700 dark:text-rose-400 tracking-tight">Zona Bahaya: Hapus Penyandingan</h4>
+              <p class="text-sm font-medium text-rose-600/80 dark:text-rose-400/80 mt-1 leading-relaxed">
+                 Tindakan ini akan menghapus kredensial WiFi dari memori perangkat secara permanen. Perangkat akan me-restart dan kembali memancarkan Hotspot Setup awal.
+              </p>
+           </div>
+        </div>
+        <div class="relative z-10 w-full md:w-auto">
+           <button v-if="!confirmReset" @click="confirmReset = true" class="w-full md:w-auto bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 px-6 py-4 rounded-[1.25rem] font-bold tracking-wide hover:bg-rose-200 dark:hover:bg-rose-500/30 transition-all shadow-sm border border-rose-200 dark:border-rose-500/30 active:scale-95 whitespace-nowrap">
+              HAPUS KONEKSI WIFI
+           </button>
+           <div v-else class="flex flex-col gap-2 w-full md:w-auto transition-all">
+              <span class="text-xs font-bold text-rose-600 dark:text-rose-400 text-center uppercase tracking-widest mb-1">Apakah Anda Yakin?</span>
+              <div class="flex gap-2">
+                 <button @click="executeResetWiFi" class="flex-1 md:flex-none bg-rose-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg shadow-rose-600/30 active:scale-95 transition-all whitespace-nowrap">
+                    YA, HAPUS!
+                 </button>
+                 <button @click="confirmReset = false" class="flex-1 md:flex-none bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-6 py-3 rounded-xl font-bold hover:bg-slate-300 dark:hover:bg-slate-600 active:scale-95 transition-all whitespace-nowrap">
+                    BATAL
+                 </button>
+              </div>
+           </div>
+        </div>
+     </div>
+
      </template>
   </div>
 </template>
@@ -155,6 +188,7 @@ export default {
   data() {
     return {
       isLoading: true,
+      confirmReset: false,
       settings: {
         is_auto_mode: true,
         ldr_threshold: 50,
@@ -203,6 +237,15 @@ export default {
           navigator.clipboard.writeText(this.settings.device_key);
           this.$emit('toast', { type: 'success', title: 'Tersalin', message: 'API Key disalin ke papan klip.' });
        }
+    },
+    async executeResetWiFi() {
+      try {
+        this.confirmReset = false;
+        await axios.post('/api/push-command', { command: 'reset_wifi' });
+        this.$emit('toast', { type: 'success', title: 'Perintah Terkirim', message: 'Instruksi hapus WiFi telah dikirim ke perangkat. Perangkat akan segera restart.' });
+      } catch (error) {
+        this.$emit('toast', { type: 'error', title: 'Gagal', message: 'Tidak dapat mengirim instruksi.' });
+      }
     }
   }
 }

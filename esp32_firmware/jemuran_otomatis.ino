@@ -75,6 +75,7 @@ const char* API_KEY = "e6b69b1c94024fbd2b3a047e80cc43c1";
 #define PIN_RAIN_ANALOG  35   // Rain sensor analog (AO): 0-4095
 #define PIN_RAIN_DIGITAL 25   // Rain sensor digital (DO) — opsional
 #define PIN_SERVO        13   // PWM servo SG90
+#define PIN_BUTTON       27   // Push button manual override (Active Low)
 
 // ============================================================================
 //  KONFIGURASI SERVO
@@ -179,6 +180,7 @@ void setup() {
   pinMode(PIN_LDR_DIGITAL, INPUT);
   pinMode(PIN_RAIN_ANALOG, INPUT);
   pinMode(PIN_RAIN_DIGITAL, INPUT);
+  pinMode(PIN_BUTTON, INPUT_PULLUP);
 
   // --- Setup Servo ---
   ESP32PWM::allocateTimer(0);
@@ -276,8 +278,34 @@ void loop() {
   // Baca sensor
   readSensors();
 
-  // Simpan ke LittleFS kalau WiFi sedang mati
-  // (Logika ini tidak dieksekusi di sini karena WiFi sudah ada, tapi defensive check)
+  // --- Pengecekan Push Button ---
+  static unsigned long lastDebounceTime = 0;
+  static int lastButtonState = HIGH;
+  int reading = digitalRead(PIN_BUTTON);
+  
+  if (reading != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+  
+  if ((millis() - lastDebounceTime) > 50) { // 50ms debounce
+    static int buttonState = HIGH;
+    if (reading != buttonState) {
+      buttonState = reading;
+      if (buttonState == LOW) { // Tombol ditekan
+        isManualMode = true;
+        Serial.println("🔘 Tombol Fisik Ditekan! Beralih ke Mode Manual.");
+        if (clotheslineStatus == "Di Luar (Menjemur)") {
+          clotheslineStatus = "Di Dalam";
+          moveServo(SERVO_TARIK);
+        } else {
+          clotheslineStatus = "Di Luar (Menjemur)";
+          moveServo(SERVO_JEMUR);
+        }
+        statusChanged = true;
+      }
+    }
+  }
+  lastButtonState = reading;
 
   // Tentukan aksi jemuran
   String previousStatus = clotheslineStatus;
@@ -521,6 +549,7 @@ void sendDataToServer() {
   doc["rain_percentage"]    = rainPercentage;
   doc["weather_condition"]  = weatherCondition;
   doc["clothesline_status"] = clotheslineStatus;
+  doc["is_auto_mode"]       = !isManualMode;
 
   String payload;
   serializeJson(doc, payload);
@@ -580,6 +609,13 @@ void sendDataToServer() {
         } else if (action == "reboot") {
           Serial.println("🔄 Perintah REBOOT diterima! Restarting...");
           delay(500);
+          ESP.restart();
+        } else if (action == "reset_wifi") {
+          Serial.println("🔄 Perintah RESET WIFI diterima! Menghapus kredensial WiFi...");
+          WiFiManager wm;
+          wm.resetSettings();
+          delay(500);
+          Serial.println("🔄 Restarting ESP32...");
           ESP.restart();
         }
       }
