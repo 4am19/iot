@@ -57,7 +57,7 @@
 // Contoh Railway  : "https://iot-jemuran.up.railway.app"
 // Contoh VPS      : "https://jemuran.namadomain.com"
 // Lokal (testing) : "http://192.168.1.110:8000"
-const char* SERVER_BASE_URL = "https://mya-unsubsidized-fabulously.ngrok-free.dev"; // URL Ngrok Anda
+const char* SERVER_BASE_URL = "https://iot.belajarhijaiyah.my.id"; // URL Hosting Hostinger Anda
 
 // API Key — salin dari halaman Settings di dashboard Anda
 const char* API_KEY = "e6b69b1c94024fbd2b3a047e80cc43c1";
@@ -102,7 +102,7 @@ const char* API_KEY = "e6b69b1c94024fbd2b3a047e80cc43c1";
 
 #define HEARTBEAT_INTERVAL_MS  5000   // Ditingkatkan jadi 5000ms (5 detik) untuk mencegah Limit Request Ngrok dan memori ESP32!
 #define OFFLINE_SAVE_INTERVAL  5000   // Simpan ke LittleFS setiap 5 detik saat offline
-#define MAX_OFFLINE_RECORDS    200    // Maksimal record offline tersimpan (hemat memori)
+#define MAX_OFFLINE_RECORDS    50     // Maksimal record offline tersimpan (dikurangi agar SSL TLS buffer muat)
 
 // ============================================================================
 //  THRESHOLD DEFAULT (bisa diubah dari dashboard)
@@ -119,7 +119,6 @@ int rainThreshold = 5;   // Jika rain > 5% → hujan → tarik
 
 Servo servoMotor;
 WebServer webServer(80);       // Web server untuk ElegantOTA
-WiFiClientSecure secureClient; // Global client agar SSL connection bisa di-reuse
 
 // Status sistem
 String clotheslineStatus = "Di Luar (Menjemur)";
@@ -140,8 +139,9 @@ unsigned long lastStatusChange   = 0;  // Kapan terakhir status berubah
 
 // Flags
 bool isWiFiConnected   = false;
-bool statusChanged     = false;  // Flag event-driven: status baru saja berubah
-bool hasFlushedOffline = false;  // Sudah kirim offline data saat pertama konek
+bool statusChanged     = false;
+bool hasFlushedOffline = false;
+bool buttonJustPressed = false; // Flag khusus untuk sinkronisasi tombol fisik ke server
 
 // LED bawaan ESP32
 #define LED_BUILTIN 2
@@ -154,6 +154,7 @@ bool hasFlushedOffline = false;  // Sudah kirim offline data saat pertama konek
 // ============================================================================
 
 void moveServo(int targetAngle); // Function prototype
+void testServerConnection();     // Function prototype
 
 
 // BLE classes and setup removed
@@ -199,13 +200,22 @@ void setup() {
     printOfflineQueueSize();
   }
 
-  // --- Setup Bluetooth (BLE) ---
-  // BLE setup removed to save flash size
-
-  // --- Setup WiFiClientSecure (Bypass SSL) ---
-  secureClient.setInsecure();
-
   // --- Setup WiFi via WiFiManager ---
+  
+  // Hapus data offline jika ukurannya melebihi kapasitas yang baru (mencegah bootloop/crash)
+  if (LittleFS.exists(OFFLINE_FILE)) {
+    File f = LittleFS.open(OFFLINE_FILE, "r");
+    if (f) {
+      if (f.size() > 1024 * 10) { // Jika file lebih dari 10KB, asumsikan terlalu besar dan reset
+        f.close();
+        LittleFS.remove(OFFLINE_FILE);
+        Serial.println("🗑️  File offline terlalu besar (berisi 200 data), dihapus untuk mencegah memory crash!");
+      } else {
+        f.close();
+      }
+    }
+  }
+
   connectWiFiManager();
 
   // --- Setup ElegantOTA (Update Firmware via Browser) ---
@@ -238,10 +248,83 @@ void setup() {
   webServer.begin();
   Serial.println("✅ ElegantOTA aktif → Buka http://" + WiFi.localIP().toString() + "/update");
 
+  // --- Test Koneksi ke Server saat Startup ---
+  if (isWiFiConnected) {
+    testServerConnection();
+  }
+
   Serial.println();
   Serial.println("🚀 Sistem siap beroperasi!");
   Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   Serial.println();
+}
+
+/**
+ * Test koneksi ke server saat startup.
+ * Diagnosa: DNS → TCP → TLS → HTTP secara bertahap.
+ */
+void testServerConnection() {
+  Serial.println();
+  Serial.println("🔍 === TEST KONEKSI KE SERVER ===");
+  
+  // Step 1: DNS Resolution
+  Serial.print("   1️⃣ DNS resolve iot.belajarhijaiyah.my.id → ");
+  IPAddress serverIP;
+  if (WiFi.hostByName("iot.belajarhijaiyah.my.id", serverIP)) {
+    Serial.println(serverIP.toString());
+  } else {
+    Serial.println("❌ GAGAL! DNS tidak bisa resolve domain.");
+    Serial.println("   ℹ️  Kemungkinan DNS kampus memblokir domain ini.");
+    return;
+  }
+
+  // Step 2: Raw TCP Connect ke port 443
+  Serial.print("   2️⃣ TCP connect ke ");
+  Serial.print(serverIP.toString());
+  Serial.print(":443 → ");
+  WiFiClient tcpClient;
+  if (tcpClient.connect(serverIP, 443, 5000)) {
+    Serial.println("✅ OK");
+    tcpClient.stop();
+  } else {
+    Serial.println("❌ GAGAL! Port 443 diblokir oleh firewall kampus.");
+    Serial.println("   ℹ️  Jaringan ITSNU-HOTSPOT kemungkinan memblokir koneksi keluar.");
+    return;
+  }
+
+  // Step 3: TLS/SSL Handshake (dengan ALPN — wajib untuk Hostinger CDN)
+  Serial.print("   3️⃣ TLS handshake (ALPN) → ");
+  WiFiClientSecure tlsClient;
+  tlsClient.setInsecure();
+  const char* alpn3[] = {"http/1.1", NULL};
+  tlsClient.setAlpnProtocols(alpn3);
+  if (tlsClient.connect("iot.belajarhijaiyah.my.id", 443, 10000)) {
+    Serial.println("✅ OK");
+    tlsClient.stop();
+  } else {
+    Serial.println("❌ GAGAL! TLS handshake ditolak.");
+    return;
+  }
+
+  // Step 4: HTTP GET test
+  Serial.print("   4️⃣ HTTP GET /api/sensor/data → ");
+  WiFiClientSecure httpClient;
+  httpClient.setInsecure();
+  const char* alpn4[] = {"http/1.1", NULL};
+  httpClient.setAlpnProtocols(alpn4);
+  HTTPClient http;
+  http.begin(httpClient, "iot.belajarhijaiyah.my.id", 443, "/api/sensor/data", true);
+  http.addHeader("X-API-KEY", API_KEY);
+  http.setTimeout(10000);
+  int code = http.GET();
+  if (code > 0) {
+    Serial.printf("✅ HTTP %d\n", code);
+  } else {
+    Serial.printf("❌ Error: %s\n", http.errorToString(code).c_str());
+  }
+  http.end();
+  
+  Serial.println("🔍 === END TEST ===");
 }
 
 // ============================================================================
@@ -293,6 +376,7 @@ void loop() {
       buttonState = reading;
       if (buttonState == LOW) { // Tombol ditekan
         isManualMode = true;
+        buttonJustPressed = true; // Beritahu server bahwa ini murni dari tombol fisik
         Serial.println("🔘 Tombol Fisik Ditekan! Beralih ke Mode Manual.");
         if (clotheslineStatus == "Di Luar (Menjemur)") {
           clotheslineStatus = "Di Dalam";
@@ -363,7 +447,7 @@ void connectWiFiManager() {
   WiFiManager wm;
 
   // Jangan reset credentials yang sudah ada sebelumnya
-  // wm.resetSettings(); // Uncomment baris ini HANYA jika ingin reset / ganti WiFi
+  wm.resetSettings(); // ⚠️ AKTIF SEMENTARA — untuk ganti WiFi. COMMENT KEMBALI setelah berhasil konek!
 
   // Kustomisasi halaman portal
   wm.setTitle("🏠 IoT Setup Portal");
@@ -408,12 +492,19 @@ void connectWiFiManager() {
   if (connected) {
     isWiFiConnected = true;
     digitalWrite(LED_BUILTIN, HIGH);
+    
+    // Paksa DNS ke Google agar bypass DNS kampus yang mungkin salah resolve
+    IPAddress dns1(8, 8, 8, 8);
+    IPAddress dns2(8, 8, 4, 4);
+    WiFi.config(WiFi.localIP(), WiFi.gatewayIP(), WiFi.subnetMask(), dns1, dns2);
+    
     Serial.println("✅ WiFi Terhubung!");
     Serial.print("   📍 IP Address: ");
     Serial.println(WiFi.localIP());
     Serial.print("   📡 RSSI: ");
     Serial.print(WiFi.RSSI());
     Serial.println(" dBm");
+    Serial.println("   🌐 DNS: 8.8.8.8 (Google)");
   } else {
     isWiFiConnected = false;
     Serial.println("⚠️  Waktu setup WiFi habis atau gagal konek.");
@@ -534,28 +625,39 @@ void moveServo(int targetAngle) {
 void sendDataToServer() {
   if (WiFi.status() != WL_CONNECTED) return;
 
+  // Cek free heap sebelum koneksi SSL (SSL butuh ~50KB)
+  if (ESP.getFreeHeap() < 60000) {
+    Serial.printf("⚠️  Heap terlalu kecil (%u bytes), skip kirim data!\n", ESP.getFreeHeap());
+    return;
+  }
+  
+  delay(500);
+  WiFiClientSecure client;
+  client.setInsecure();
+  const char* alpn[] = {"http/1.1", NULL};
+  client.setAlpnProtocols(alpn);
+  
   HTTPClient http;
-  http.setReuse(true); // Mempertahankan koneksi SSL agar tidak handshake ulang (menghemat waktu dan mencegah connection refused)
-  String url = String(SERVER_BASE_URL) + "/api/sensor/data";
-  http.begin(secureClient, url);
+  // Gunakan overload eksplisit host/port/path agar SNI dikirim dengan benar
+  // (Hostinger/CDN wajib SNI, tanpa ini → connection refused)
+  http.begin(client, "iot.belajarhijaiyah.my.id", 443, "/api/sensor/data", true);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-API-KEY", API_KEY);
   http.addHeader("ngrok-skip-browser-warning", "true"); // Bypass Ngrok interstitial page
-  http.setTimeout(10000);
+  http.setTimeout(15000);
 
-  // Build JSON payload
+  Serial.printf("📤 Kirim (Free heap: %u bytes) → ", ESP.getFreeHeap());
   JsonDocument doc;
   doc["ldr_value"]          = ldrValue;
   doc["rain_percentage"]    = rainPercentage;
   doc["weather_condition"]  = weatherCondition;
   doc["clothesline_status"] = clotheslineStatus;
   doc["is_auto_mode"]       = !isManualMode;
-
+  doc["button_pressed"]     = buttonJustPressed;
   String payload;
   serializeJson(doc, payload);
-
-  Serial.print("📤 Kirim → ");
   Serial.println(payload);
+  buttonJustPressed = false; // Reset flag setelah data dikirim
 
   int httpCode = http.POST(payload);
 
@@ -729,13 +831,16 @@ void flushOfflineData() {
   if (arr.size() == 0) return;
 
   // Kirim batch ke endpoint /api/sensor/data/batch
+  WiFiClientSecure client;
+  client.setInsecure();
+  const char* alpn[] = {"http/1.1", NULL};
+  client.setAlpnProtocols(alpn);
+  
   HTTPClient http;
-  http.setReuse(true);
-  String url = String(SERVER_BASE_URL) + "/api/sensor/data/batch";
-  http.begin(secureClient, url);
+  // Gunakan overload eksplisit host/port/path agar SNI dikirim dengan benar
+  http.begin(client, "iot.belajarhijaiyah.my.id", 443, "/api/sensor/data/batch", true);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-API-KEY", API_KEY);
-  http.addHeader("ngrok-skip-browser-warning", "true"); // Bypass Ngrok interstitial page
   http.setTimeout(30000); // timeout lebih lama untuk batch
 
   String batchPayload;

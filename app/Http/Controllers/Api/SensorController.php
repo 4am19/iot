@@ -72,16 +72,15 @@ class SensorController extends Controller
         // Ambil settings terbaru
         $setting = DeviceSetting::first();
 
-        // Update mode and position if ESP32 physical button was pressed (Manual Override)
-        if ($request->has('is_auto_mode') && $setting) {
-            if ($setting->is_auto_mode !== $validated['is_auto_mode'] || (!$validated['is_auto_mode'] && $setting->manual_position !== $validated['clothesline_status'])) {
-                $setting->update([
-                    'is_auto_mode'    => $validated['is_auto_mode'],
-                    'manual_position' => $validated['is_auto_mode'] ? $setting->manual_position : $validated['clothesline_status']
-                ]);
-            }
+        // (Logika override dari ESP32 dihapus karena menyebabkan race condition:
+        // status tertinggal dari ESP32 menimpa pengaturan baru dari dashboard)
+        // UPDATE: Gunakan flag button_pressed eksplisit dari ESP32
+        if ($request->input('button_pressed') && $setting) {
+            $setting->update([
+                'is_auto_mode'    => $validated['is_auto_mode'],
+                'manual_position' => $validated['clothesline_status']
+            ]);
         }
-
         // Ambil perintah tertunda (belum dieksekusi) — yang paling baru
         $pendingCommand = CommandQueue::where('executed', false)
             ->orderBy('created_at', 'asc') // FIFO: perintah pertama dieksekusi dulu
