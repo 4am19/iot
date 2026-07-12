@@ -73,6 +73,8 @@ app.post('/send-broadcast', async (req, res) => {
     if (!isConnected || !sock) return res.status(503).json({ success: false, message: 'WhatsApp bot is not connected yet.' });
 
     const { numbers, message } = req.body;
+    console.log(`\n[API] Menerima request /send-broadcast untuk ${numbers ? numbers.length : 0} nomor.`);
+
     if (!numbers || !Array.isArray(numbers) || numbers.length === 0) return res.status(400).json({ success: false, message: 'Numbers array is required and cannot be empty.' });
     if (!message) return res.status(400).json({ success: false, message: 'Message text is required.' });
 
@@ -120,15 +122,20 @@ setInterval(async () => {
             : 'http://localhost:8000/api/device/health-check';
 
         const res = await fetch(apiUrl);
-        if (!res.ok) return;
+        if (!res.ok) {
+            console.log(`[POLLING ERROR] HTTP Status: ${res.status}`);
+            return;
+        }
 
         const data = await res.json();
         if (data.status === 'went_offline') {
             console.log('\n[CRITICAL] ESP32 TERPUTUS! Mengirim notifikasi WA...');
         } else if (data.status === 'came_online') {
             console.log('\n[INFO] ESP32 KEMBALI ONLINE! Mengirim notifikasi WA...');
+        } else {
+            // console.log(`[POLLING] Status API: ${data.status}`); // Uncomment untuk melihat setiap detik
         }
     } catch (err) {
-        // Diamkan jika server Laravel sedang mati agar log tidak penuh
+        console.error('\n[POLLING FATAL ERROR] Gagal menghubungi API Laravel:', err.message);
     }
 }, 10000);
