@@ -310,7 +310,7 @@
 <script>
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 export default {
@@ -607,7 +607,7 @@ export default {
           doc.text(`Kategori Data: ${this.exportTypeLabel}`, 14, 36);
           doc.text(`Rentang Waktu: ${this.exportDateRangeLabel}`, 14, 42);
 
-          doc.autoTable({
+          autoTable(doc, {
              head: [headers],
              body: rows,
              startY: 50,
