@@ -224,20 +224,26 @@
                      <div class="z-20">
                         <label class="block text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Kategori Data</label>
                         <div class="relative" @click.stop>
-                           <button @click="exportTypeMenuOpen = !exportTypeMenuOpen; exportDateMenuOpen = false" class="flex items-center justify-between w-full bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
-                              <span class="flex items-center gap-2">
-                                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                           <button @click="exportTypeMenuOpen = !exportTypeMenuOpen; exportDateMenuOpen = false" 
+                              :class="[
+                                 'flex items-center justify-between w-full bg-white dark:bg-slate-800 rounded-2xl px-4 py-3.5 text-sm font-bold transition-all',
+                                 exportTypeMenuOpen ? 'border-2 border-indigo-500 text-indigo-700 dark:text-indigo-400 shadow-[0_4px_20px_-4px_rgba(99,102,241,0.2)]' : 'border-2 border-indigo-100 dark:border-indigo-900/30 text-slate-700 dark:text-slate-300 hover:border-indigo-300'
+                              ]">
+                              <span class="flex items-center gap-3">
+                                 <svg class="w-5 h-5" :class="exportTypeMenuOpen ? 'text-indigo-600 dark:text-indigo-400' : 'text-indigo-400 dark:text-indigo-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
                                  {{ exportTypeLabel }}
                               </span>
-                              <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="exportTypeMenuOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                              <svg class="w-5 h-5 transition-transform duration-300" :class="[exportTypeMenuOpen ? 'rotate-180 text-indigo-600 dark:text-indigo-400' : 'text-slate-400']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
                            </button>
    
-                           <transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
-                              <div v-if="exportTypeMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700/60 overflow-hidden">
-                                 <div class="p-2 space-y-1">
-                                    <button v-for="filter in availableFilters" :key="filter.id" @click="selectExportType(filter.id); exportTypeMenuOpen = false" class="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-between group" :class="exportConfig.type === filter.id ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'">
+                           <transition enter-active-class="transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]" enter-from-class="opacity-0 -translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
+                              <div v-if="exportTypeMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-3 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-700/60 overflow-hidden py-2">
+                                 <div class="px-2 space-y-1">
+                                    <button v-for="filter in availableFilters" :key="filter.id" @click="selectExportType(filter.id); exportTypeMenuOpen = false" 
+                                       class="w-full text-left px-4 py-3.5 rounded-2xl text-sm transition-all flex items-center justify-between group" 
+                                       :class="exportConfig.type === filter.id ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 font-semibold'">
                                        {{ filter.label }}
-                                       <svg v-if="exportConfig.type === filter.id" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                       <svg v-if="exportConfig.type === filter.id" class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                                     </button>
                                  </div>
                               </div>
@@ -249,20 +255,26 @@
                      <div class="z-10 relative">
                         <label class="block text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Rentang Waktu</label>
                         <div class="relative" @click.stop>
-                           <button @click="exportDateMenuOpen = !exportDateMenuOpen; exportTypeMenuOpen = false" class="flex items-center justify-between w-full bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
-                              <span class="flex items-center gap-2">
-                                 <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                           <button @click="exportDateMenuOpen = !exportDateMenuOpen; exportTypeMenuOpen = false" 
+                              :class="[
+                                 'flex items-center justify-between w-full bg-white dark:bg-slate-800 rounded-2xl px-4 py-3.5 text-sm font-bold transition-all',
+                                 exportDateMenuOpen ? 'border-2 border-emerald-500 text-emerald-700 dark:text-emerald-400 shadow-[0_4px_20px_-4px_rgba(16,185,129,0.2)]' : 'border-2 border-emerald-100 dark:border-emerald-900/30 text-slate-700 dark:text-slate-300 hover:border-emerald-300'
+                              ]">
+                              <span class="flex items-center gap-3">
+                                 <svg class="w-5 h-5" :class="exportDateMenuOpen ? 'text-emerald-600 dark:text-emerald-400' : 'text-emerald-400 dark:text-emerald-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                  {{ exportDateRangeLabel }}
                               </span>
-                              <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="exportDateMenuOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                              <svg class="w-5 h-5 transition-transform duration-300" :class="[exportDateMenuOpen ? 'rotate-180 text-emerald-600 dark:text-emerald-400' : 'text-slate-400']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
                            </button>
    
-                           <transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
-                              <div v-if="exportDateMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700/60 overflow-hidden">
-                                 <div class="p-2 space-y-1">
-                                    <button v-for="range in [{id: 'all', label: 'Semua Waktu'}, {id: 'today', label: 'Hari Ini'}, {id: '7days', label: '7 Hari Terakhir'}, {id: 'custom', label: 'Custom Tanggal'}]" :key="range.id" @click="selectExportDateRange(range.id); exportDateMenuOpen = false" class="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-between group" :class="exportConfig.dateRange === range.id ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'">
+                           <transition enter-active-class="transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]" enter-from-class="opacity-0 -translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
+                              <div v-if="exportDateMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-3 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-700/60 overflow-hidden py-2">
+                                 <div class="px-2 space-y-1">
+                                    <button v-for="range in [{id: 'all', label: 'Semua Waktu'}, {id: 'today', label: 'Hari Ini'}, {id: '7days', label: '7 Hari Terakhir'}, {id: 'custom', label: 'Custom Tanggal'}]" :key="range.id" @click="selectExportDateRange(range.id); exportDateMenuOpen = false" 
+                                       class="w-full text-left px-4 py-3.5 rounded-2xl text-sm transition-all flex items-center justify-between group" 
+                                       :class="exportConfig.dateRange === range.id ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 font-semibold'">
                                        {{ range.label }}
-                                       <svg v-if="exportConfig.dateRange === range.id" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                       <svg v-if="exportConfig.dateRange === range.id" class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                                     </button>
                                  </div>
                               </div>
