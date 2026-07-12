@@ -176,7 +176,8 @@ export default {
        
        try {
           if (this.form.id) {
-             await axios.put(`/api/users/${this.form.id}`, this.form);
+             // Hostinger workaround: use POST with _method=PUT
+             await axios.post(`/api/users/${this.form.id}`, { ...this.form, _method: 'PUT' });
              this.$emit('toast', { type: 'success', title: 'Diperbarui', message: 'Data pengguna berhasil diubah.' });
           } else {
              await axios.post('/api/users', this.form);
@@ -198,7 +199,8 @@ export default {
        if (!confirm('Anda yakin ingin menghapus izin akses anggota ini secara permanen?')) return;
        
        try {
-          await axios.delete(`/api/users/${id}`);
+          // Hostinger workaround: use POST with _method=DELETE
+          await axios.post(`/api/users/${id}`, { _method: 'DELETE' });
           this.$emit('toast', { type: 'success', title: 'Terhapus', message: 'Akses pengguna telah dicabut.' });
           this.fetchUsers();
        } catch (error) {

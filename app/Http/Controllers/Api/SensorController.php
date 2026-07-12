@@ -36,6 +36,7 @@ class SensorController extends Controller
             'latestData'     => $latestLog,
             'history'        => $logs,
             'pendingCommand' => $pendingCommand,
+            'server_time'    => now()->toIso8601String(),
         ]);
     }
 

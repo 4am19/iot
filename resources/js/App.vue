@@ -334,11 +334,11 @@ export default {
        try {
           const response = await axios.get('/api/dashboard-data');
           if (response.data) {
-             if (response.data.latestData && response.data.latestData.updated_at) {
-                // Konversi UTC dari backend ke Date object lokal
-                const now = new Date();
+             if (response.data.latestData && response.data.latestData.updated_at && response.data.server_time) {
+                // Gunakan waktu dari server untuk menghindari perbedaan zona waktu/time drift
+                const serverNow = new Date(response.data.server_time);
                 const lastUpdate = new Date(response.data.latestData.updated_at);
-                const diffSeconds = (now - lastUpdate) / 1000;
+                const diffSeconds = (serverNow - lastUpdate) / 1000;
                 
                 // Toleransi 120 detik (karena sistem polling & delay internet/ngrok)
                 this.esp32Online = diffSeconds <= 120;
