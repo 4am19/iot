@@ -195,7 +195,7 @@
                     </div>
 
                     <!-- Modal Body -->
-                    <div class="p-4 sm:p-6 pb-24 space-y-5 sm:space-y-6 bg-white dark:bg-slate-800 overflow-y-auto custom-scrollbar flex-1">
+                    <div class="p-4 sm:p-6 space-y-5 sm:space-y-6 bg-white dark:bg-slate-800 overflow-y-auto custom-scrollbar flex-1 transition-all duration-300" :class="(exportTypeMenuOpen || exportDateMenuOpen) ? 'pb-48' : 'pb-4'">
                        
                        <!-- Format File Selection -->
                        <div>
