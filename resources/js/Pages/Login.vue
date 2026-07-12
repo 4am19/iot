@@ -17,10 +17,13 @@
       <!-- Left: Branding -->
       <div class="login-brand">
         <div class="brand-content">
-          <div class="brand-icon">
-            <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-          </div>
-          <h1 class="brand-title">IoT Jemuran<br><span>Pintar</span></h1>
+          <h1 class="brand-title group">
+            <img src="/images/logo-iot.png" alt="Logo IoT" class="brand-logo" />
+            <div class="brand-text">
+              <span class="text-slate-800 dark:text-slate-100 font-extrabold">IoT Jemuran</span>
+              <span class="brand-highlight">Pintar</span>
+            </div>
+          </h1>
           <p class="brand-desc">Sistem otomatisasi jemuran berbasis ESP32 dengan monitoring cuaca real-time dan kontrol cerdas.</p>
           <div class="brand-features">
             <div class="feature-item"><div class="feature-dot feature-dot--cyan"></div><span>Deteksi Panas Otomatis</span></div>
@@ -38,8 +41,8 @@
           <div class="card-glow"></div>
           <div class="card-inner">
             <div class="card-header">
-              <div class="card-logo">
-                <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
+              <div class="card-logo group cursor-pointer">
+                <img src="/images/logo-iot.png" alt="Logo" class="w-10 h-10 object-contain drop-shadow-md group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500" />
               </div>
               <h2>Masuk Sistem</h2>
               <p>Akses dashboard kontrol IoT Anda</p>
@@ -266,7 +269,7 @@ export default {
   background: #f0f4f8;
   color: #1e293b;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   transition: background 0.5s, color 0.5s;
 }
@@ -288,58 +291,50 @@ export default {
   66% { transform: translate(-20px, 20px) scale(0.95); }
 }
 
-/* Layout */
+/* Mobile-First Layout */
 .login-container { 
-  position: relative; z-index: 1; min-height: 100vh; 
+  position: relative; z-index: 1; min-height: 100vh;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 2rem;
-  gap: 2rem;
-  perspective: 1000px;
-}
-
-@keyframes floatDown {
-  0% { opacity: 0; transform: translateY(-40px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-@keyframes floatUp {
-  0% { opacity: 0; transform: translateY(40px); }
-  100% { opacity: 1; transform: translateY(0); }
+  padding: 2rem 1.5rem; gap: 2rem; perspective: 1000px;
 }
 
 /* Branding Header */
 .login-brand { 
   display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; 
   animation: floatDown 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  width: 100%; max-width: 420px; text-align: center;
 }
 .brand-content { 
-  display: flex; flex-direction: column; align-items: center; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
 }
-.brand-icon {
-  width: 72px; height: 72px; border-radius: 22px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  display: flex; align-items: center; justify-content: center;
-  color: white; box-shadow: 0 8px 32px rgba(99,102,241,0.35);
-  margin-bottom: 1.5rem; animation: iconPulse 3s ease-in-out infinite;
+.brand-logo {
+  display: none; /* hidden on mobile */
+  width: 48px; height: 48px; object-fit: contain;
+  filter: drop-shadow(0 4px 15px rgba(99,102,241,0.2));
+  transition: all 0.5s;
 }
-.brand-icon svg { width: 32px; height: 32px; }
-@keyframes iconPulse {
-  0%, 100% { box-shadow: 0 8px 32px rgba(99,102,241,0.35); }
-  50% { box-shadow: 0 8px 48px rgba(99,102,241,0.5); }
+.brand-title {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; font-size: 2.2rem; line-height: 1.1; margin: 0; cursor: pointer;
+  letter-spacing: -0.03em;
 }
-.brand-title { font-size: 2.8rem; font-weight: 800; color: #1e293b; line-height: 1.1; margin: 0; letter-spacing: -0.03em; transition: color 0.5s; }
-.dark .brand-title { color: #f1f5f9; }
-.brand-title br { display: none; }
-.brand-title span { background: linear-gradient(135deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-left: 12px; }
-.dark .brand-title span { background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.brand-text { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.brand-highlight {
+  background: linear-gradient(135deg, #6366f1, #a855f7); font-weight: 800;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.dark .brand-highlight {
+  background: linear-gradient(135deg, #818cf8, #c084fc);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
 
-/* Hide redundant elements to keep it simple */
-.brand-desc, .brand-features, .brand-footer { display: none !important; }
+/* Hide redundant elements on mobile to keep it simple */
+.brand-desc, .brand-features, .brand-footer { display: none; }
 
 /* Right Form */
 .login-form-side { 
-  display: flex; align-items: center; justify-content: center; width: 100%; 
-  opacity: 0;
-  animation: floatUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s forwards;
+  display: flex; align-items: center; justify-content: center; width: 100%; max-width: 420px;
+  opacity: 0; animation: floatUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s forwards;
 }
 .login-card { width: 100%; max-width: 420px; position: relative; }
 .card-glow {
@@ -374,7 +369,7 @@ export default {
 
 /* Card Header */
 .card-header { text-align: center; margin-bottom: 2rem; }
-.card-logo { display: none !important; }
+.card-logo { margin-bottom: 1rem; display: flex; justify-content: center; }
 .card-header h2 { font-size: 1.6rem; font-weight: 800; color: #1e293b; margin: 0 0 0.4rem 0; letter-spacing: -0.02em; transition: color 0.5s; }
 .dark .card-header h2 { color: #f1f5f9; }
 .card-header p { color: #94a3b8; font-size: 0.85rem; margin: 0; font-weight: 500; transition: color 0.5s; }
@@ -526,29 +521,114 @@ export default {
 }
 .theme-toggle:hover .theme-toggle-icon { transform: rotate(30deg); }
 
-/* Mobile Responsive Adjustments */
-@media (max-width: 768px) {
+/* Desktop Enterprise Layout (Large Screens) */
+@media (min-width: 1024px) {
+  .login-root { height: 100vh; overflow: hidden; }
   .login-container { 
-    padding: 1rem;
-    gap: 1.5rem;
-    justify-content: flex-start;
+    flex-direction: row; 
+    justify-content: space-between; 
+    max-width: 1400px; 
+    margin: 0 auto; 
+    padding: 2rem 4rem; 
+    align-items: center;
+    height: 100vh;
   }
+  
   .login-brand { 
-    padding: 2.5rem 1rem 0; 
+    flex: 1; max-width: 50%;
+    align-items: flex-start; 
+    text-align: left; 
+    padding: 1rem 3rem 1rem 0;
   }
   .brand-content {
-    flex-direction: row;
-    gap: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
   }
-  .brand-icon { 
-    width: 48px; height: 48px; 
-    margin-bottom: 0; 
-    border-radius: 14px;
+  .brand-logo {
+    display: block; width: 64px; height: 64px;
+    filter: drop-shadow(0 4px 15px rgba(99,102,241,0.2));
   }
-  .brand-icon svg { width: 24px; height: 24px; }
-  .brand-title { 
-    font-size: 1.8rem; 
+  .brand-title {
+    flex-direction: row; align-items: center; gap: 20px;
+    font-size: 3.2rem; margin-bottom: 0.5rem;
   }
-  .card-inner { padding: 1.8rem; }
+  .brand-title:hover .brand-logo {
+    transform: scale(1.1) rotate(5deg);
+    filter: drop-shadow(0 8px 25px rgba(99,102,241,0.5));
+  }
+  .brand-text {
+    flex-direction: row; align-items: center; gap: 12px;
+  }
+  
+  .brand-desc { 
+    display: block; margin-top: 1rem; font-size: 1.1rem; 
+    line-height: 1.6; color: #475569; max-width: 90%; font-weight: 500;
+  }
+  .dark .brand-desc { color: #94a3b8; }
+  
+  .brand-features {
+    display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem;
+  }
+  .feature-item {
+    display: flex; align-items: center; gap: 16px;
+    font-size: 1.05rem; font-weight: 600; color: #334155;
+    background: transparent; padding: 12px 0; 
+    border: none; border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-radius: 0; box-shadow: none; backdrop-filter: none;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: default;
+  }
+  .feature-item:last-child { border-bottom: none; }
+  .dark .feature-item {
+    color: #cbd5e1; background: transparent;
+    border-color: rgba(255,255,255,0.05); box-shadow: none;
+  }
+  .feature-item:hover {
+    transform: translateX(10px);
+    background: transparent; box-shadow: none;
+    color: #1e293b;
+  }
+  .dark .feature-item:hover {
+    background: transparent; box-shadow: none;
+    color: #fff;
+  }
+  .feature-dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 12px currentColor; }
+  .feature-dot--cyan { background: #06b6d4; color: #06b6d4; }
+  .feature-dot--green { background: #10b981; color: #10b981; }
+  .feature-dot--purple { background: #8b5cf6; color: #8b5cf6; }
+  .feature-dot--amber { background: #f59e0b; color: #f59e0b; }
+
+  .brand-footer {
+    display: block;
+    margin-top: 3rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #94a3b8;
+  }
+  .dark .brand-footer { color: #475569; }
+
+  .login-form-side {
+    flex: 1;
+    max-width: 50%;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  
+  .login-card {
+    max-width: 440px;
+  }
+  .card-inner {
+    padding: 2.5rem;
+  }
+}
+
+@keyframes floatDown {
+  0% { opacity: 0; transform: translateY(-40px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes floatUp {
+  0% { opacity: 0; transform: translateY(40px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 </style>

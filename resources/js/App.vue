@@ -29,11 +29,9 @@
     <aside :class="mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" 
            class="w-72 flex flex-col flex-shrink-0 z-50 fixed md:relative h-full transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] sidebar-glass">
       <div class="p-7 pb-4">
-        <h1 class="text-xl font-extrabold tracking-tight flex items-center gap-3">
-           <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 ring-1 ring-white/10">
-               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path></svg>
-           </div>
-           <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-300 dark:to-purple-300 transition-colors">IoT Jemuran</span>
+        <h1 class="text-xl font-extrabold tracking-tight flex items-center gap-3 group/logo cursor-pointer" @click="activePage = 'dashboard'">
+           <img src="/images/logo-iot.png" alt="Logo IoT" class="w-10 h-10 object-contain drop-shadow-[0_2px_10px_rgba(99,102,241,0.2)] dark:drop-shadow-[0_2px_10px_rgba(255,255,255,0.1)] transition-all duration-500 group-hover/logo:scale-110 group-hover/logo:rotate-3 group-hover/logo:drop-shadow-[0_4px_15px_rgba(99,102,241,0.5)]" />
+           <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-300 dark:to-purple-300 transition-colors group-hover/logo:from-purple-600 group-hover/logo:to-indigo-600 dark:group-hover/logo:from-purple-300 dark:group-hover/logo:to-indigo-300">IoT Jemuran</span>
         </h1>
       </div>
       
@@ -151,7 +149,7 @@
 
     <!-- Toast Notification System -->
     <transition enter-active-class="transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]" enter-from-class="translate-y-4 opacity-0 scale-95" enter-to-class="translate-y-0 opacity-100 scale-100" leave-active-class="transition-all duration-300 ease-in" leave-from-class="translate-y-0 opacity-100 scale-100" leave-to-class="translate-y-2 opacity-0 scale-95">
-       <div v-if="toast.visible" class="fixed bottom-6 right-6 z-[100] max-w-sm">
+       <div v-if="toast.visible" class="fixed bottom-6 right-6 z-[99999] max-w-sm">
           <div class="flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl border backdrop-blur-xl" 
                :class="toast.type === 'success' ? 'bg-emerald-900/80 border-emerald-700/50 text-emerald-200' : toast.type === 'error' ? 'bg-rose-900/80 border-rose-700/50 text-rose-200' : 'bg-indigo-900/80 border-indigo-700/50 text-indigo-200'">
              <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" :class="toast.type === 'success' ? 'bg-emerald-500 text-white' : toast.type === 'error' ? 'bg-rose-500 text-white' : 'bg-indigo-500 text-white'">

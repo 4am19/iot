@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use App\Models\AuditLog;
 
 class SensorController extends Controller
 {
@@ -51,6 +52,33 @@ class SensorController extends Controller
     }
 
     /**
+     * Ambil log aktivitas gabungan (pergerakan + audit login).
+     */
+    public function getActivityLogs(Request $request)
+    {
+        $sensorLogs = SensorLog::orderBy('id', 'desc')->take(100)->get()->map(function ($log) {
+            $log->type = 'pergerakan';
+            return $log;
+        });
+
+        // Hanya admin yang bisa melihat audit log (asumsi role ada di tabel users, tapi untuk amannya kita sertakan selalu jika user terautentikasi dan admin)
+        $auditLogs = collect();
+        if (Auth::check() && Auth::user()->role === 'admin') {
+            $auditLogs = AuditLog::with('user')->orderBy('id', 'desc')->take(50)->get()->map(function ($log) {
+                $log->type = 'audit';
+                return $log;
+            });
+        }
+
+        // Gabungkan dan urutkan berdasarkan created_at descending
+        $combinedLogs = $sensorLogs->concat($auditLogs)->sortByDesc(function ($item) {
+            return $item->created_at;
+        })->values()->all();
+
+        return response()->json($combinedLogs);
+    }
+
+    /**
      * Terima data sensor tunggal dari ESP32 (normal operation).
      * Juga mengembalikan settings terbaru + pending command ke ESP32.
      */
@@ -63,6 +91,16 @@ class SensorController extends Controller
             'clothesline_status' => 'required|string',
             'is_auto_mode'       => 'nullable|boolean',
         ]);
+
+        $setting = DeviceSetting::first();
+        $triggerSource = 'otomatis';
+        
+        if ($request->input('button_pressed')) {
+            $triggerSource = 'manual_fisik';
+        } elseif ($setting && !$setting->is_auto_mode) {
+            $triggerSource = 'manual_dashboard';
+        }
+        $validated['trigger_source'] = $triggerSource;
 
         $latestLog = SensorLog::latest()->first();
 
@@ -79,8 +117,8 @@ class SensorController extends Controller
             }
         }
 
-        // Ambil settings terbaru
-        $setting = DeviceSetting::first();
+        // Settings sudah diambil di atas
+
 
         // (Logika override dari ESP32 dihapus karena menyebabkan race condition:
         // status tertinggal dari ESP32 menimpa pengaturan baru dari dashboard)
@@ -237,6 +275,9 @@ class SensorController extends Controller
     {
         $setting = DeviceSetting::first();
         if ($setting) {
+            $oldLdr = $setting->ldr_threshold;
+            $oldRain = $setting->rain_threshold;
+
             $setting->update($request->only([
                 'is_auto_mode',
                 'ldr_threshold',
@@ -244,6 +285,24 @@ class SensorController extends Controller
                 'manual_position',
                 'owner_name',
             ]));
+
+            if ($request->has('ldr_threshold') && $oldLdr != $request->ldr_threshold) {
+                AuditLog::create([
+                    'user_id' => Auth::id(),
+                    'action' => "Ubah Kalibrasi Cahaya: $oldLdr% -> {$request->ldr_threshold}%",
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+            }
+
+            if ($request->has('rain_threshold') && $oldRain != $request->rain_threshold) {
+                AuditLog::create([
+                    'user_id' => Auth::id(),
+                    'action' => "Ubah Kalibrasi Hujan: $oldRain% -> {$request->rain_threshold}%",
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+            }
         }
         return response()->json(['status' => 'success', 'setting' => $setting]);
     }

@@ -22,6 +22,9 @@ Route::middleware('auth')->group(function () {
 
     // Log histori (halaman History)
     Route::get('/api/logs', [SensorController::class, 'getLogs']);
+    
+    // Log histori gabungan + Audit (halaman History baru)
+    Route::get('/api/activity-logs', [SensorController::class, 'getActivityLogs']);
 
     // Update pengaturan threshold / mode / nama dari Settings page
     Route::post('/api/update-setting', [SensorController::class, 'updateSetting']);

@@ -11,6 +11,7 @@ class SensorLog extends Model
         'rain_percentage',
         'weather_condition',
         'clothesline_status',
+        'trigger_source',
     ];
 
     protected $casts = [

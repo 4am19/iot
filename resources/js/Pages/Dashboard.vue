@@ -140,24 +140,11 @@
         </div>
       </div>
 
-      <!-- Summary Stats Row -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-         <div v-for="(stat, index) in summaryStats" :key="stat.label" 
-              class="bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl rounded-xl p-4 md:p-5 border border-white/50 dark:border-white/[0.08] group hover:-translate-y-1 transition-all duration-500 cursor-default animation-fade-in-up hover:border-indigo-400/30 dark:hover:border-indigo-500/20 hover:shadow-[0_4px_20px_rgba(99,102,241,0.08)] dark:hover:shadow-[0_0_25px_rgba(99,102,241,0.06)] shadow-sm dark:shadow-none"
-              :style="{ animationDelay: `${(index + 2) * 100}ms` }">
-            <div class="flex items-center gap-3 mb-3">
-               <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-300" :class="stat.bgClass">{{ stat.emoji }}</div>
-               <span class="text-[10px] md:text-xs font-bold uppercase tracking-widest text-slate-500 leading-tight">{{ stat.label }}</span>
-            </div>
-            <p class="text-3xl md:text-4xl font-black tracking-tighter tabular-nums transition-colors duration-300" :class="stat.valueClass">{{ stat.value }}<span class="text-sm font-bold ml-1 opacity-60">{{ stat.unit }}</span></p>
-         </div>
-      </div>
-
-      <!-- Chart + Control Row -->
+      <!-- Chart + Control Row (Moved after Pembacaan Fisik / Top Row) -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
          
          <!-- Neumorphic Main Switch -->
-         <div class="bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-white/50 dark:border-white/[0.08] flex flex-col items-center justify-center min-h-[300px] relative overflow-hidden animation-fade-in-up delay-600 group hover:border-indigo-400/30 dark:hover:border-indigo-500/20 transition-all duration-500 shadow-sm dark:shadow-none">
+         <div class="bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-white/50 dark:border-white/[0.08] flex flex-col items-center justify-center min-h-[300px] relative overflow-hidden animation-fade-in-up delay-100 group hover:border-indigo-400/30 dark:hover:border-indigo-500/20 transition-all duration-500 shadow-sm dark:shadow-none">
              <!-- Interactive Glow Background -->
              <div class="absolute inset-0 transition-opacity duration-700 opacity-10 pointer-events-none"
                   :class="settings.is_auto_mode ? 'bg-gradient-to-tr from-emerald-500 to-emerald-900' : 'bg-gradient-to-tr from-rose-500 to-rose-900'"></div>
@@ -197,21 +184,11 @@
          </div>
 
          <!-- Manual Control Buttons -->
-         <div class="bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-white/50 dark:border-white/[0.08] relative flex flex-col justify-center min-h-[300px] animation-fade-in-up delay-700 hover:border-indigo-400/30 dark:hover:border-indigo-500/20 transition-all duration-500 shadow-sm dark:shadow-none">
+         <div class="bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-white/50 dark:border-white/[0.08] relative flex flex-col justify-center min-h-[300px] animation-fade-in-up delay-200 hover:border-indigo-400/30 dark:hover:border-indigo-500/20 transition-all duration-500 shadow-sm dark:shadow-none">
              <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-3 mb-6">
                 <div class="flex items-center gap-3">
                  <h3 class="text-slate-500 font-bold text-[11px] uppercase tracking-[0.2em] bg-white/[0.06] px-4 py-1.5 rounded-full border border-white/10">Eksekusi Manual</h3>
-                 <button @click="isBleConnected ? disconnectBluetooth() : connectBluetooth()" class="px-3 py-1.5 rounded-full text-[10px] font-bold border transition-colors flex items-center gap-2 group/ble" :class="isBleConnected ? 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30 hover:bg-rose-500/15 hover:text-rose-400 hover:border-rose-500/30' : 'bg-white/5 text-slate-400 border-white/10 hover:bg-indigo-500/15 hover:text-indigo-400 hover:border-indigo-500/30'">
-                   <!-- Icon Bluetooth -->
-                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m0-16l5 5-5 5m0-10L7 9l5 5m0 0l5 5-5 5"></path></svg>
-                   <span class="group-hover/ble:hidden">{{ isBleConnected ? 'BLE Terhubung' : 'Koneksi BLE' }}</span>
-                   <span class="hidden group-hover/ble:inline">{{ isBleConnected ? 'Putuskan BLE' : 'Hubungkan BLE' }}</span>
-                 </button>
                </div>
-               <span class="relative flex h-3 w-3 self-end sm:self-auto" v-if="!settings.is_auto_mode || isBleConnected">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="isBleConnected ? 'bg-indigo-400' : 'bg-rose-400'"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3" :class="isBleConnected ? 'bg-indigo-500' : 'bg-rose-500'"></span>
-               </span>
              </div>
 
              <!-- Pending Command Indicator -->
@@ -226,7 +203,7 @@
              <div class="grid grid-cols-1 gap-5 relative z-10">
                 <div v-if="!settings.is_auto_mode" class="absolute -inset-4 bg-rose-400/20 blur-2xl rounded-[3rem] animate-pulse pointer-events-none -z-10"></div>
                 
-                <button @click="pushCommand('move_out')" :disabled="(settings.is_auto_mode && !isBleConnected) || isSendingCommand || (!isDeviceOnline && !isBleConnected)"
+                <button @click="pushCommand('move_out')" :disabled="settings.is_auto_mode || isSendingCommand || !isDeviceOnline"
                         class="relative overflow-hidden w-full py-5 md:py-6 bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-600 hover:from-blue-400 hover:to-indigo-400 dark:hover:from-blue-500 dark:hover:to-indigo-500 text-white disabled:from-slate-200 disabled:to-slate-200 dark:disabled:from-slate-700 dark:disabled:to-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 font-bold text-base md:text-lg rounded-xl shadow-[0_8px_20px_rgba(79,70,229,0.25)] hover:shadow-[0_12px_30px_rgba(79,70,229,0.35)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-3 group cursor-pointer disabled:cursor-not-allowed">
                    <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-[150%] skew-x-[-20deg] group-hover:animate-shine disabled:hidden"></div>
                    <div class="w-9 h-9 bg-white/15 rounded-lg group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm border border-white/10">
@@ -235,7 +212,7 @@
                    <span class="tracking-wide text-sm md:text-xl drop-shadow-md">KELUARKAN JEMURAN</span>
                 </button>
                 
-                <button @click="pushCommand('move_in')" :disabled="(settings.is_auto_mode && !isBleConnected) || isSendingCommand || (!isDeviceOnline && !isBleConnected)"
+                <button @click="pushCommand('move_in')" :disabled="settings.is_auto_mode || isSendingCommand || !isDeviceOnline"
                         class="relative overflow-hidden w-full py-5 md:py-6 bg-gradient-to-r from-rose-500 to-red-500 dark:from-rose-600 dark:to-red-600 hover:from-rose-400 hover:to-red-400 dark:hover:from-rose-500 dark:hover:to-red-500 text-white disabled:from-slate-200 disabled:to-slate-200 dark:disabled:from-slate-700 dark:disabled:to-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 font-bold text-base md:text-lg rounded-xl shadow-[0_8px_20px_rgba(244,63,94,0.25)] hover:shadow-[0_12px_30px_rgba(244,63,94,0.35)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-3 group cursor-pointer disabled:cursor-not-allowed">
                    <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-[150%] skew-x-[-20deg] group-hover:animate-shine disabled:hidden"></div>
                    <div class="w-9 h-9 bg-white/15 rounded-lg group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm border border-white/10">
@@ -244,6 +221,19 @@
                    <span class="tracking-wide text-sm md:text-xl drop-shadow-md">TARIK MASUK JEMURAN</span>
                 </button>
              </div>
+         </div>
+      </div>
+
+      <!-- Summary Stats Row (Moved lower) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+         <div v-for="(stat, index) in summaryStats" :key="stat.label" 
+              class="bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl rounded-xl p-4 md:p-5 border border-white/50 dark:border-white/[0.08] group hover:-translate-y-1 transition-all duration-500 cursor-default animation-fade-in-up hover:border-indigo-400/30 dark:hover:border-indigo-500/20 hover:shadow-[0_4px_20px_rgba(99,102,241,0.08)] dark:hover:shadow-[0_0_25px_rgba(99,102,241,0.06)] shadow-sm dark:shadow-none"
+              :style="{ animationDelay: `${(index + 3) * 100}ms` }">
+            <div class="flex items-center gap-3 mb-3">
+               <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-300" :class="stat.bgClass">{{ stat.emoji }}</div>
+               <span class="text-[10px] md:text-xs font-bold uppercase tracking-widest text-slate-500 leading-tight">{{ stat.label }}</span>
+            </div>
+            <p class="text-3xl md:text-4xl font-black tracking-tighter tabular-nums transition-colors duration-300" :class="stat.valueClass">{{ stat.value }}<span class="text-sm font-bold ml-1 opacity-60">{{ stat.unit }}</span></p>
          </div>
       </div>
 
@@ -259,7 +249,7 @@
                REKAM JEJAK
              </span>
           </div>
-          <div class="relative w-full rounded-xl bg-white/50 dark:bg-white/[0.03] backdrop-blur-sm p-4 border border-slate-200 dark:border-white/5" style="height: 300px;">
+          <div class="relative w-full rounded-xl bg-white/50 dark:bg-white/[0.03] backdrop-blur-sm p-3 sm:p-4 border border-slate-200 dark:border-white/5 h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px]">
              <canvas ref="sensorChart"></canvas>
           </div>
       </div>
