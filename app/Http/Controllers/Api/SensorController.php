@@ -139,25 +139,31 @@ class SensorController extends Controller
         $rain = $data['rain_percentage'] ?? 0;
         $ldr = $data['ldr_value'] ?? 0;
 
-        $timestamp = now()->timezone('Asia/Jakarta')->format('d M Y, H:i:s \W\I\B');
-        $severity = $status === 'Di Dalam' ? '🔴 HIGH (WEATHER ANOMALY)' : '🟢 LOW (NORMALIZATION)';
-        $action = $status === 'Di Dalam' ? 'RETRACT_TO_SAFE_ZONE' : 'DEPLOY_TO_OUTDOOR';
+        $timestamp = now()->timezone('Asia/Jakarta')->format('d M Y, H:i \W\I\B');
+        $isEmergency = $status === 'Di Dalam';
+        
+        $header = $isEmergency ? "🔴 PERINGATAN SISTEM: CUACA BURUK" : "🟢 INFO SISTEM: CUACA CERAH";
 
-        $message = "🏢 *IoT SYSTEM NOTIFICATION*\n"
+        $message = "*{$header}*\n"
                  . "━━━━━━━━━━━━━━━━━━━━━━\n"
-                 . "📍 *Node:* CLOTHESLINE-ESP32-01\n"
-                 . "⏱️ *Time:* {$timestamp}\n"
-                 . "⚠️ *Severity:* {$severity}\n"
+                 . "Waktu: {$timestamp}\n"
+                 . "Sistem: Smart Clothesline (Node-01)\n"
                  . "━━━━━━━━━━━━━━━━━━━━━━\n"
-                 . "*[TELEMETRY DATA]*\n"
-                 . "☁️ Weather: *" . strtoupper($weather) . "*\n"
-                 . "🌧️ Rain Sensor: *{$rain}%*\n"
-                 . "☀️ LDR Sensor: *{$ldr}*\n"
-                 . "⚙️ Actuator Status: *" . strtoupper($status) . "*\n"
-                 . "━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                 . "*[ACTION LOG]*\n"
-                 . "Sistem telah mengeksekusi protokol *{$action}* secara otomatis berdasarkan parameter *Rule Engine* terbaru guna melindungi aset.\n\n"
-                 . "_- IT Operations & Control Center -_";
+                 . "*Data Sensor Real-time:*\n"
+                 . "☁️ Kondisi Cuaca: *" . strtoupper($weather) . "*\n"
+                 . "💧 Sensor Hujan: *{$rain}%*\n"
+                 . "☀️ Sensor Cahaya: *{$ldr}*\n"
+                 . "━━━━━━━━━━━━━━━━━━━━━━\n\n";
+
+        if ($isEmergency) {
+            $message .= "⚠️ *Tindakan Otomatis*\n"
+                     . "Sistem mendeteksi cuaca buruk. Jemuran telah *ditarik ke dalam ruangan* secara otomatis untuk mengamankan pakaian Anda.\n\n";
+        } else {
+            $message .= "✅ *Tindakan Otomatis*\n"
+                     . "Cuaca sudah kembali normal. Jemuran telah *dikeluarkan kembali* secara otomatis untuk melanjutkan penjemuran.\n\n";
+        }
+
+        $message .= "_- Pesan Otomatis dari Smart Clothesline IoT -_";
 
         try {
             // Kirim secara asinkron (timeout 2 detik agar tidak menghalangi response ESP32)
