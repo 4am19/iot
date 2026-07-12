@@ -170,8 +170,8 @@
                  </span>
                  
                  <!-- Status Text inside Toggle -->
-                 <span class="absolute right-6 font-black text-white/90 text-sm tracking-widest transition-opacity duration-300" :class="settings.is_auto_mode ? 'opacity-100' : 'opacity-0'">AUTO</span>
-                 <span class="absolute left-6 font-black text-slate-400 text-sm tracking-widest transition-opacity duration-300" :class="!settings.is_auto_mode ? 'opacity-100' : 'opacity-0'">MANUAL</span>
+                 <span class="absolute left-4 sm:left-5 font-black text-white/90 text-[10px] sm:text-[11px] tracking-wider transition-opacity duration-300" :class="settings.is_auto_mode ? 'opacity-100' : 'opacity-0'">OTOMATIS</span>
+                 <span class="absolute right-5 sm:right-6 font-black text-slate-400 text-xs tracking-widest transition-opacity duration-300" :class="!settings.is_auto_mode ? 'opacity-100' : 'opacity-0'">MANUAL</span>
                </button>
                
                <div class="mt-6 px-5 py-2 rounded-xl bg-white/[0.06] border border-white/10 backdrop-blur transition-colors duration-500"
