@@ -451,7 +451,7 @@ export default {
                 bgClass: 'bg-blue-100 dark:bg-blue-900/50',
                 textClass: 'text-blue-700 dark:text-blue-400',
                 tagBg: 'bg-blue-200/50 dark:bg-blue-800/50',
-                tag: 'AI Otomatis'
+                tag: 'Otomatis'
              };
           case 'manual_dashboard':
              return {
