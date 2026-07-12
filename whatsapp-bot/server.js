@@ -113,11 +113,10 @@ app.listen(PORT, () => {
 setInterval(async () => {
     try {
         // Panggil endpoint health-check Laravel
-        // Jika berjalan di production (Hostinger), gunakan URL aslinya
-        // Jika di lokal, gunakan http://localhost:8000
+        // Perbaikan: gunakan sub-domain 'iot.belajarhijaiyah.my.id' sesuai dengan APP_URL
         const isProduction = process.env.NODE_ENV === 'production' || __dirname.includes('public_html');
         const apiUrl = isProduction 
-            ? 'https://belajarhijaiyah.my.id/api/device/health-check' 
+            ? 'https://iot.belajarhijaiyah.my.id/api/device/health-check' 
             : 'http://localhost:8000/api/device/health-check';
 
         const res = await fetch(apiUrl);
