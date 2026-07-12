@@ -76,6 +76,7 @@ const char* API_KEY = "e6b69b1c94024fbd2b3a047e80cc43c1";
 #define PIN_RAIN_DIGITAL 25   // Rain sensor digital (DO) — opsional
 #define PIN_SERVO        13   // PWM servo SG90
 #define PIN_BUTTON       27   // Push button manual override (Active Low)
+#define PIN_BOOT_BUTTON  0    // Tombol BOOT bawaan ESP32 (Active Low)
 
 // ============================================================================
 //  KONFIGURASI SERVO
@@ -182,6 +183,7 @@ void setup() {
   pinMode(PIN_RAIN_ANALOG, INPUT);
   pinMode(PIN_RAIN_DIGITAL, INPUT);
   pinMode(PIN_BUTTON, INPUT_PULLUP);
+  pinMode(PIN_BOOT_BUTTON, INPUT_PULLUP);
 
   // --- Setup Servo ---
   ESP32PWM::allocateTimer(0);
@@ -391,6 +393,27 @@ void loop() {
   }
   lastButtonState = reading;
 
+  // --- Pengecekan BOOT Button (Reset WiFi) ---
+  static unsigned long bootButtonPressTime = 0;
+  static bool bootButtonState = HIGH;
+  bool currentBootState = digitalRead(PIN_BOOT_BUTTON);
+  
+  if (currentBootState == LOW && bootButtonState == HIGH) {
+    bootButtonPressTime = millis();
+    bootButtonState = LOW;
+  } else if (currentBootState == HIGH && bootButtonState == LOW) {
+    bootButtonState = HIGH;
+  } else if (currentBootState == LOW && bootButtonState == LOW) {
+    if (millis() - bootButtonPressTime > 3000) { // Ditahan 3 detik
+      Serial.println("⚠️ Tombol BOOT ditahan 3 detik! Mereset WiFi...");
+      WiFiManager wm;
+      wm.resetSettings();
+      Serial.println("🔄 WiFi direset. Restarting ESP32...");
+      delay(1000);
+      ESP.restart();
+    }
+  }
+
   // Tentukan aksi jemuran
   String previousStatus = clotheslineStatus;
   String previousWeather = weatherCondition;
@@ -446,8 +469,8 @@ void loop() {
 void connectWiFiManager() {
   WiFiManager wm;
 
-  // Jangan reset credentials yang sudah ada sebelumnya
-  wm.resetSettings(); // ⚠️ AKTIF SEMENTARA — untuk ganti WiFi. COMMENT KEMBALI setelah berhasil konek!
+  // Jangan reset credentials yang sudah ada sebelumnya (Comment agar bisa auto reconnect)
+  // wm.resetSettings(); 
 
   // Kustomisasi halaman portal
   wm.setTitle("🏠 IoT Setup Portal");

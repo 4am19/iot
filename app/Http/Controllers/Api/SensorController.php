@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\CommandQueue;
 use App\Models\DeviceSetting;
 use App\Models\SensorLog;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class SensorController extends Controller
 {
@@ -67,6 +69,12 @@ class SensorController extends Controller
             $log = $latestLog;
         } else {
             $log = SensorLog::create($validated);
+            
+            // --- RULE ENGINE: KONDISI JEMURAN DITARIK KARENA CUACA ---
+            // Hanya kirim notifikasi jika status baru adalah "Di Dalam" dan bukan karena mode manual
+            if ($validated['clothesline_status'] === 'Di Dalam' && !$request->input('button_pressed')) {
+                $this->broadcastWhatsAppAlert($validated['weather_condition']);
+            }
         }
 
         // Ambil settings terbaru
@@ -111,6 +119,35 @@ class SensorController extends Controller
                 'payload' => $pendingCommand->payload,
             ] : null,
         ], 200);
+    }
+
+    /**
+     * Broadcast pesan WhatsApp ke semua user yang memiliki nomor telepon terdaftar.
+     */
+    private function broadcastWhatsAppAlert($weather)
+    {
+        $botUrl = env('WA_BOT_URL', 'http://localhost:3000/send-broadcast');
+        $usersWithPhone = User::whereNotNull('phone')->where('phone', '!=', '')->pluck('phone')->toArray();
+
+        if (empty($usersWithPhone)) {
+            return; // Tidak ada nomor WA yang terdaftar
+        }
+
+        $message = "🚨 *PERINGATAN DINI CUACA!*\n\n"
+                 . "Kondisi saat ini: *{$weather}*\n"
+                 . "Sistem telah otomatis menarik jemuran ke dalam ruangan untuk melindungi pakaian Anda.\n\n"
+                 . "_- Smart Clothesline IoT_";
+
+        try {
+            // Kirim secara asinkron (timeout 2 detik agar tidak menghalangi response ESP32)
+            Http::timeout(2)->post($botUrl, [
+                'numbers' => $usersWithPhone,
+                'message' => $message,
+            ]);
+        } catch (\Exception $e) {
+            // Abaikan error jika bot WA mati agar ESP32 tidak menerima error 500
+            \Log::error('Gagal mengirim WhatsApp alert: ' . $e->getMessage());
+        }
     }
 
     /**

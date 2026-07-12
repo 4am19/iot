@@ -61,7 +61,7 @@
                <div class="flex items-center gap-3">
                   <div class="relative flex-shrink-0">
                      <div class="w-10 h-10 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-md ring-2 ring-white dark:ring-slate-900 group-hover:rotate-6 transition-transform duration-300">
-                        {{ ownerInitials }}
+                        {{ displayUserInitials }}
                      </div>
                      <span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 border-2 border-white dark:border-slate-800 rounded-full" 
                            :class="esp32Online ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'"
@@ -70,8 +70,8 @@
                   </div>
                   
                   <div class="flex-1 min-w-0">
-                     <p class="font-bold text-slate-800 dark:text-slate-100 text-[13px] truncate transition-colors" :title="ownerName">{{ ownerName }}</p>
-                     <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest transition-colors">Administrator</p>
+                     <p class="font-bold text-slate-800 dark:text-slate-100 text-[13px] truncate transition-colors" :title="displayUserName">{{ displayUserName }}</p>
+                     <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest transition-colors">{{ displayUserRole }}</p>
                   </div>
 
                   <button @click="logout" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors border border-transparent hover:border-rose-100 dark:hover:border-rose-500/20 flex-shrink-0" title="Keluar">
@@ -144,7 +144,7 @@
       <!-- Dynamic Page Rendering Container -->
       <main class="flex-1 overflow-x-hidden overflow-y-auto w-full relative p-4 md:p-6 lg:p-8">
           <transition name="page-slide" mode="out-in">
-             <component :is="activePageComponent" @toast="showToast" :isDarkMode="isDarkMode"></component>
+             <component :is="activePageComponent" @toast="showToast" :isDarkMode="isDarkMode" :currentUser="currentUser"></component>
           </transition>
       </main>
     </div>
@@ -186,10 +186,10 @@ export default {
       clockInterval: null,
       globalPolling: null,
       esp32Online: false,
-      ownerName: 'Memuat...',
       isAuthenticated: false,
       isAuthReady: false,
       isDarkMode: true,
+      currentUser: {},
       toast: {
         visible: false,
         type: 'success',
@@ -220,8 +220,15 @@ export default {
        const found = this.menuItems.find(i => i.key === this.activePage);
        return found ? found.label : 'Dashboard';
     },
-    ownerInitials() {
-       return this.ownerName && this.ownerName !== 'Memuat...' ? this.ownerName.charAt(0).toUpperCase() : '?';
+    displayUserName() {
+       return this.currentUser?.name || 'Memuat...';
+    },
+    displayUserRole() {
+       return this.currentUser?.role === 'admin' ? 'Administrator' : 'Anggota Keluarga';
+    },
+    displayUserInitials() {
+       const name = this.displayUserName;
+       return name && name !== 'Memuat...' ? name.charAt(0).toUpperCase() : '?';
     }
   },
   created() {
@@ -282,7 +289,10 @@ export default {
        try {
           const res = await axios.get('/api/auth/check');
           this.isAuthenticated = res.data.authenticated;
-          if (this.isAuthenticated) this.startDashboard();
+          if (this.isAuthenticated) {
+             this.currentUser = res.data.user;
+             this.startDashboard();
+          }
        } catch(e) {
           this.isAuthenticated = false;
        } finally {
@@ -291,6 +301,7 @@ export default {
     },
     onLoginSuccess(user) {
        this.isAuthenticated = true;
+       this.currentUser = user;
        this.startDashboard();
        this.showToast({ type: 'success', title: 'Selamat Datang', message: 'Otentikasi berhasil.' });
     },
@@ -323,8 +334,6 @@ export default {
        try {
           const response = await axios.get('/api/dashboard-data');
           if (response.data) {
-             this.ownerName = response.data.setting.owner_name || 'Administrator';
-             
              if (response.data.latestData && response.data.latestData.created_at) {
                 // Konversi UTC dari backend ke Date object lokal
                 const now = new Date();

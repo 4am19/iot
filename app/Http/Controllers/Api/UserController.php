@@ -17,7 +17,7 @@ class UserController extends Controller
     public function index()
     {
         // Gunakan CASE WHEN agar kompatibel MySQL, SQLite, dan PostgreSQL
-        $users = User::select('id', 'name', 'email', 'role', 'created_at')
+        $users = User::select('id', 'name', 'email', 'phone', 'role', 'created_at')
             ->orderByRaw("CASE WHEN role = 'admin' THEN 0 ELSE 1 END")
             ->orderBy('created_at', 'asc')
             ->get();
@@ -38,6 +38,7 @@ class UserController extends Controller
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:4',
+            'phone'    => 'nullable|string|max:20',
             'role'     => ['nullable', Rule::in(['admin', 'member'])],
         ]);
 
@@ -45,6 +46,7 @@ class UserController extends Controller
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'phone'    => $validated['phone'] ?? null,
             'role'     => $validated['role'] ?? 'member',
         ]);
 
@@ -74,6 +76,7 @@ class UserController extends Controller
         $rules = [
             'name'  => 'required|string|max:255',
             'email' => ['required', 'email', Rule::unique('users')->ignore($user->id)],
+            'phone' => 'nullable|string|max:20',
             'role'  => ['nullable', Rule::in(['admin', 'member'])],
         ];
 
@@ -85,6 +88,9 @@ class UserController extends Controller
 
         $user->name  = $validated['name'];
         $user->email = $validated['email'];
+        if (array_key_exists('phone', $validated)) {
+            $user->phone = $validated['phone'];
+        }
 
         if (!empty($validated['role']) && $currentUser?->isAdmin()) {
             $user->role = $validated['role'];
@@ -100,25 +106,21 @@ class UserController extends Controller
     }
 
     /**
-     * Hapus anggota (hanya admin).
+     * Hapus anggota (hanya admin atau diri sendiri).
      */
     public function destroy($id)
     {
         $user        = User::findOrFail($id);
         $currentUser = Auth::user();
 
-        if (!$currentUser?->isAdmin()) {
-            return response()->json(['error' => 'Hanya admin yang boleh menghapus akun.'], 403);
+        // Member hanya boleh menghapus dirinya sendiri
+        if (!$currentUser?->isAdmin() && $currentUser?->id !== $user->id) {
+            return response()->json(['error' => 'Hanya admin yang boleh menghapus akun lain.'], 403);
         }
 
         // Cegah admin menghapus admin terakhir
         if ($user->role === 'admin' && User::where('role', 'admin')->count() <= 1) {
             return response()->json(['error' => 'Tidak bisa menghapus satu-satunya admin.'], 422);
-        }
-
-        // Admin tidak bisa hapus dirinya sendiri
-        if (Auth::guard('web')->id() === $user->id) {
-            return response()->json(['error' => 'Tidak bisa menghapus akun sendiri saat sedang login.'], 403);
         }
 
         $user->delete();

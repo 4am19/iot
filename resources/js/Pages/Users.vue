@@ -8,7 +8,7 @@
            <p class="text-slate-500 dark:text-slate-400 mt-2 font-medium text-lg max-w-xl transition-colors">Kelola siapa saja anggota keluarga atau administrator sekunder yang boleh mengendalikan dashboard IoT ini.</p>
         </div>
         
-        <button @click="openModal()" class="relative z-10 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-4 rounded-2xl font-black shadow-[0_10px_25px_rgba(16,185,129,0.3)] hover:shadow-[0_10px_35px_rgba(16,185,129,0.4)] transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-3 w-full md:w-auto justify-center group overflow-hidden">
+        <button v-if="currentUser?.role === 'admin'" @click="openModal()" class="relative z-10 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-4 rounded-2xl font-black shadow-[0_10px_25px_rgba(16,185,129,0.3)] hover:shadow-[0_10px_35px_rgba(16,185,129,0.4)] transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-3 w-full md:w-auto justify-center group overflow-hidden">
            <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] skew-x-[-20deg] group-hover:translate-x-[150%] transition-transform duration-700"></div>
            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
            TAMBAH ANGGOTA
@@ -46,11 +46,14 @@
                  <p class="text-[10px] font-black tracking-widest text-emerald-500 dark:text-emerald-400 uppercase mt-2 bg-emerald-50 dark:bg-emerald-500/10 w-max mx-auto md:mx-0 px-2.5 py-1 rounded-md border border-emerald-100/50 dark:border-emerald-500/20 shadow-sm dark:shadow-none transition-colors" title="Member Sejak">
                     Terdaftar: {{ new Date(user.created_at).toLocaleDateString() }}
                  </p>
+                 <p v-if="user.phone" class="text-[10px] font-black tracking-widest text-blue-500 dark:text-blue-400 uppercase mt-2 bg-blue-50 dark:bg-blue-500/10 w-max mx-auto md:mx-0 px-2.5 py-1 rounded-md border border-blue-100/50 dark:border-blue-500/20 shadow-sm dark:shadow-none transition-colors" title="Nomor WhatsApp">
+                    WA: {{ user.phone }}
+                 </p>
               </div>
 
               <div class="flex gap-3 w-full md:w-auto">
-                 <button @click="openModal(user)" class="flex-1 md:flex-none px-5 py-3 bg-white dark:bg-slate-800 text-blue-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none rounded-xl font-bold hover:bg-blue-50 dark:hover:bg-slate-700 hover:border-blue-200 dark:hover:border-slate-600 transition-colors">Edit</button>
-                 <button @click="deleteUser(user.id)" class="flex-1 md:flex-none px-5 py-3 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none rounded-xl font-bold hover:bg-rose-50 dark:hover:bg-slate-700 hover:border-rose-200 dark:hover:border-slate-600 transition-colors">Hapus</button>
+                 <button v-if="currentUser?.role === 'admin' || currentUser?.id === user.id" @click="openModal(user)" class="flex-1 md:flex-none px-5 py-3 bg-white dark:bg-slate-800 text-blue-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none rounded-xl font-bold hover:bg-blue-50 dark:hover:bg-slate-700 hover:border-blue-200 dark:hover:border-slate-600 transition-colors">Edit</button>
+                 <button v-if="currentUser?.role === 'admin' || currentUser?.id === user.id" @click="deleteUser(user.id)" class="flex-1 md:flex-none px-5 py-3 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none rounded-xl font-bold hover:bg-rose-50 dark:hover:bg-slate-700 hover:border-rose-200 dark:hover:border-slate-600 transition-colors">Hapus</button>
               </div>
            </div>
         </div>
@@ -82,8 +85,19 @@
                  </div>
 
                  <div class="space-y-1.5 relative">
+                    <label class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-2 transition-colors">Nomor WhatsApp (Opsional)</label>
+                    <input type="text" v-model="form.phone" placeholder="Mis. 628123456789 (Gunakan format 62 atau 08)" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl px-5 py-3.5 font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-indigo-400 transition-all">
+                 </div>
+
+                 <div class="space-y-1.5 relative">
                     <label class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-2 transition-colors">Sandi Rahasia {{ form.id ? '(Kosongkan jika tidak diubah)' : '' }}</label>
-                    <input type="password" v-model="form.password" :required="!form.id" placeholder="Minimal 4 karakter" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl px-5 py-3.5 font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-indigo-400 transition-all">
+                    <div class="relative flex items-center">
+                       <input :type="showPassword ? 'text' : 'password'" v-model="form.password" :required="!form.id" placeholder="Minimal 4 karakter" class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl px-5 py-3.5 pr-12 font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-indigo-400 transition-all">
+                       <button type="button" @click="showPassword = !showPassword" class="absolute right-4 text-slate-400 hover:text-blue-500 dark:hover:text-indigo-400 transition-colors focus:outline-none" tabindex="-1">
+                          <svg v-if="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                          <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                       </button>
+                    </div>
                  </div>
 
                  <div class="pt-6 flex gap-3">
@@ -106,18 +120,24 @@ import axios from 'axios';
 
 export default {
   emits: ['toast'],
+  props: {
+    isDarkMode: { type: Boolean, default: true },
+    currentUser: { type: Object, default: () => ({}) }
+  },
   data() {
     return {
       users: [],
       isLoading: true,
       isModalOpen: false,
       isSaving: false,
+      showPassword: false,
       errorMessage: '',
       form: {
         id: null,
         name: '',
         email: '',
-        password: ''
+        password: '',
+        phone: ''
       }
     }
   },
@@ -139,10 +159,11 @@ export default {
     },
     openModal(user = null) {
        this.errorMessage = '';
+       this.showPassword = false;
        if (user) {
-          this.form = { id: user.id, name: user.name, email: user.email, password: '' };
+          this.form = { id: user.id, name: user.name, email: user.email, password: '', phone: user.phone || '' };
        } else {
-          this.form = { id: null, name: '', email: '', password: '' };
+          this.form = { id: null, name: '', email: '', password: '', phone: '' };
        }
        this.isModalOpen = true;
     },
