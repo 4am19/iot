@@ -106,6 +106,9 @@ class SensorController extends Controller
 
         // Buat log baru jika status jemuran berubah, ATAU jika dipicu oleh tombol fisik manual
         if ($latestLog && $latestLog->clothesline_status === $validated['clothesline_status'] && !$request->input('button_pressed')) {
+            // Hapus trigger_source agar tidak menimpa sumber pemicu asli dari log ini saat polling rutin
+            unset($validated['trigger_source']);
+            
             $latestLog->update($validated);
             $latestLog->touch(); // Wajib! Memaksa updated_at diperbarui meskipun nilai ldr/hujan sama persis
             $log = $latestLog;
