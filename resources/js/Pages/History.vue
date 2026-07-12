@@ -195,7 +195,7 @@
                     </div>
 
                     <!-- Modal Body -->
-                    <div class="p-6 space-y-6 bg-white dark:bg-slate-800 overflow-y-auto custom-scrollbar flex-1">
+                    <div class="p-4 sm:p-6 pb-24 space-y-5 sm:space-y-6 bg-white dark:bg-slate-800 overflow-y-auto custom-scrollbar flex-1">
                        
                        <!-- Format File Selection -->
                        <div>
@@ -221,58 +221,62 @@
                           </div>
                        </div>
                                         <!-- Kategori Data -->
-                     <div class="relative z-20">
+                     <div class="z-20">
                         <label class="block text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Kategori Data</label>
-                        <button @click="exportTypeMenuOpen = !exportTypeMenuOpen" class="flex items-center justify-between w-full bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
-                           <span class="flex items-center gap-2">
-                              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                              {{ exportTypeLabel }}
-                           </span>
-                           <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="exportTypeMenuOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
-                        
-                        <!-- Invisible Overlay for closing -->
-                        <div v-if="exportTypeMenuOpen" @click="exportTypeMenuOpen = false" class="fixed inset-0 z-40"></div>
-
-                        <transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
-                           <div v-if="exportTypeMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700/60 overflow-hidden">
-                              <div class="p-2 space-y-1">
-                                 <button v-for="filter in availableFilters" :key="filter.id" @click="selectExportType(filter.id)" class="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-between group" :class="exportConfig.type === filter.id ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'">
-                                    {{ filter.label }}
-                                    <svg v-if="exportConfig.type === filter.id" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                 </button>
+                        <div class="relative">
+                           <button @click="exportTypeMenuOpen = !exportTypeMenuOpen" class="flex items-center justify-between w-full bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
+                              <span class="flex items-center gap-2">
+                                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                 {{ exportTypeLabel }}
+                              </span>
+                              <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="exportTypeMenuOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                           </button>
+                           
+                           <!-- Invisible Overlay for closing -->
+                           <div v-if="exportTypeMenuOpen" @click="exportTypeMenuOpen = false" class="fixed inset-0 z-40"></div>
+   
+                           <transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
+                              <div v-if="exportTypeMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700/60 overflow-hidden">
+                                 <div class="p-2 space-y-1">
+                                    <button v-for="filter in availableFilters" :key="filter.id" @click="selectExportType(filter.id); exportTypeMenuOpen = false" class="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-between group" :class="exportConfig.type === filter.id ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'">
+                                       {{ filter.label }}
+                                       <svg v-if="exportConfig.type === filter.id" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    </button>
+                                 </div>
                               </div>
-                           </div>
-                        </transition>
+                           </transition>
+                        </div>
                      </div>
 
-                    <!-- Rentang Waktu -->
-                    <div class="relative z-10">
-                       <label class="block text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Rentang Waktu</label>
-                       <button @click="exportDateMenuOpen = !exportDateMenuOpen" class="flex items-center justify-between w-full bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
-                          <span class="flex items-center gap-2">
-                             <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                             {{ exportDateRangeLabel }}
-                          </span>
-                          <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="exportDateMenuOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                       </button>
-                       
-                       <!-- Invisible Overlay for closing -->
-                       <div v-if="exportDateMenuOpen" @click="exportDateMenuOpen = false" class="fixed inset-0 z-40"></div>
-
-                       <transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
-                          <div v-if="exportDateMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700/60 overflow-hidden">
-                             <div class="p-2 space-y-1">
-                                <button v-for="range in [{id: 'all', label: 'Semua Waktu'}, {id: 'today', label: 'Hari Ini'}, {id: '7days', label: '7 Hari Terakhir'}, {id: 'custom', label: 'Custom Tanggal'}]" :key="range.id" @click="selectExportDateRange(range.id)" class="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-between group" :class="exportConfig.dateRange === range.id ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'">
-                                   {{ range.label }}
-                                   <svg v-if="exportConfig.dateRange === range.id" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                </button>
-                             </div>
-                          </div>
-                       </transition>
+                                    <!-- Rentang Waktu -->
+                     <div class="z-10 relative">
+                        <label class="block text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Rentang Waktu</label>
+                        <div class="relative">
+                           <button @click="exportDateMenuOpen = !exportDateMenuOpen" class="flex items-center justify-between w-full bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
+                              <span class="flex items-center gap-2">
+                                 <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                 {{ exportDateRangeLabel }}
+                              </span>
+                              <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="exportDateMenuOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                           </button>
+                           
+                           <!-- Invisible Overlay for closing -->
+                           <div v-if="exportDateMenuOpen" @click="exportDateMenuOpen = false" class="fixed inset-0 z-40"></div>
+   
+                           <transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
+                              <div v-if="exportDateMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700/60 overflow-hidden">
+                                 <div class="p-2 space-y-1">
+                                    <button v-for="range in [{id: 'all', label: 'Semua Waktu'}, {id: 'today', label: 'Hari Ini'}, {id: '7days', label: '7 Hari Terakhir'}, {id: 'custom', label: 'Custom Tanggal'}]" :key="range.id" @click="selectExportDateRange(range.id); exportDateMenuOpen = false" class="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-between group" :class="exportConfig.dateRange === range.id ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'">
+                                       {{ range.label }}
+                                       <svg v-if="exportConfig.dateRange === range.id" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    </button>
+                                 </div>
+                              </div>
+                           </transition>
+                        </div>
 
                           <transition enter-active-class="transition-all duration-300" enter-from-class="opacity-0 -translate-y-2 max-h-0 overflow-hidden" enter-to-class="opacity-100 translate-y-0 max-h-40 overflow-hidden" leave-active-class="transition-all duration-200" leave-from-class="opacity-100 translate-y-0 max-h-40 overflow-hidden" leave-to-class="opacity-0 -translate-y-2 max-h-0 overflow-hidden">
-                             <div v-if="exportConfig.dateRange === 'custom'" class="grid grid-cols-2 gap-4 mt-4 bg-slate-50 dark:bg-slate-900/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                             <div v-if="exportConfig.dateRange === 'custom'" class="grid grid-cols-2 gap-4 mt-4 bg-slate-50 dark:bg-slate-900/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative z-0">
                                 <div>
                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Dari Tanggal</label>
                                    <input type="date" v-model="exportConfig.startDate" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-sm">
@@ -283,11 +287,10 @@
                                 </div>
                              </div>
                           </transition>
-                       </div>
+                        </div>
+                     </div>
 
-                    </div>
-
-                    <!-- Modal Footer Actions -->
+                     <!-- Modal Footer Actions -->
                     <div class="px-6 pb-6 bg-white dark:bg-slate-800 rounded-b-3xl">
                        <button @click="doExport" class="w-full flex items-center justify-center gap-2 bg-[#00a884] hover:bg-[#008f6f] text-white py-3.5 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-[#00a884]/30">
                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
