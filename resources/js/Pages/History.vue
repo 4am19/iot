@@ -534,6 +534,26 @@ export default {
           return;
        }
 
+       const formatTitleCase = (str) => {
+          if (!str) return '-';
+          return str.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+       };
+
+       const formatTrigger = (trigger) => {
+          if (!trigger) return '-';
+          if (trigger === 'manual_fisik') return 'Manual (Tombol Fisik)';
+          if (trigger === 'manual_dashboard') return 'Manual (Web Dashboard)';
+          if (trigger === 'otomatis') return 'Otomatis (Sistem AI)';
+          return formatTitleCase(trigger);
+       };
+
+       const formatStatus = (status) => {
+          if (!status) return '-';
+          if (status.toLowerCase() === 'di luar (menjemur)') return 'Di Luar (Menjemur)';
+          if (status.toLowerCase() === 'di dalam') return 'Di Dalam';
+          return formatTitleCase(status);
+       };
+
        let headers = [];
        let rows = [];
 
@@ -541,40 +561,40 @@ export default {
           headers = ['Waktu', 'Pengguna', 'Aksi', 'Alamat IP', 'Perangkat (User Agent)'];
           rows = data.map(l => [
              this.formatAbsoluteTime(l.created_at),
-             l.user?.name || 'Unknown',
-             l.action,
+             l.user?.name || 'Sistem',
+             formatTitleCase(l.action),
              l.ip_address || '-',
              l.user_agent || '-'
           ]);
        } else if (['pergerakan', 'otomatis', 'manual_dashboard', 'manual_fisik'].includes(this.exportConfig.type)) {
-          headers = ['Waktu', 'Status Jemuran', 'Pemicu (Trigger)', 'Kondisi Cuaca', 'Sensor Cahaya', 'Sensor Hujan'];
+          headers = ['Waktu', 'Status Jemuran', 'Pemicu (Trigger)', 'Kondisi Cuaca', 'Cahaya', 'Hujan'];
           rows = data.map(l => [
              this.formatAbsoluteTime(l.created_at),
-             (l.clothesline_status || '').toUpperCase(),
-             (l.trigger_source || '-').toUpperCase(),
-             (l.weather_condition || '-').toUpperCase(),
+             formatStatus(l.clothesline_status),
+             formatTrigger(l.trigger_source),
+             formatTitleCase(l.weather_condition),
              `${l.ldr_value || 0}%`,
              `${l.rain_percentage || 0}%`
           ]);
        } else {
           // Gabungan (Semua Aktivitas)
-          headers = ['Waktu', 'Kategori', 'Detail Aktivitas / Status', 'Sumber / IP', 'Data Tambahan'];
+          headers = ['Waktu', 'Kategori', 'Detail Aktivitas / Status', 'Sumber / Pemicu', 'Data Tambahan'];
           rows = data.map(l => {
              if (l.type === 'audit') {
                 return [
                    this.formatAbsoluteTime(l.created_at),
-                   'KEAMANAN',
-                   `Pengguna: ${l.user?.name || 'Sistem'} melalukan ${l.action}`,
-                   l.ip_address || '-',
-                   l.user_agent || '-'
+                   'Keamanan',
+                   `Aktivitas: ${formatTitleCase(l.action)}`,
+                   `Oleh: ${l.user?.name || 'Sistem'}`,
+                   `IP: ${l.ip_address || '-'} | Perangkat: ${l.user_agent || '-'}`
                 ];
              } else {
                 return [
                    this.formatAbsoluteTime(l.created_at),
-                   'PERGERAKAN',
-                   `Posisi Motor: ${(l.clothesline_status || '-').toUpperCase()}`,
-                   `Pemicu: ${(l.trigger_source || '-').toUpperCase()}`,
-                   `Cuaca: ${l.weather_condition || '-'} | Cahaya: ${l.ldr_value || 0}% | Hujan: ${l.rain_percentage || 0}%`
+                   'Pergerakan',
+                   `Posisi: ${formatStatus(l.clothesline_status)}`,
+                   formatTrigger(l.trigger_source),
+                   `Cuaca: ${formatTitleCase(l.weather_condition)} | Cahaya: ${l.ldr_value || 0}% | Hujan: ${l.rain_percentage || 0}%`
                 ];
              }
           });
@@ -590,25 +610,70 @@ export default {
        } else if (format === 'pdf') {
           const doc = new jsPDF('landscape'); // Landscape to fit data better
           
-          // Header PDF Professional
-          doc.setFontSize(18);
-          doc.setTextColor(30, 41, 59);
-          doc.text("Laporan Riwayat Aktivitas - Smart Clothesline", 14, 22);
+          // Header Background Accent Bar
+          doc.setFillColor(16, 185, 129); // Emerald 500
+          doc.rect(0, 0, doc.internal.pageSize.width, 6, 'F');
           
-          doc.setFontSize(10);
-          doc.setTextColor(100, 116, 139);
-          doc.text(`Dicetak pada: ${this.formatAbsoluteTime(new Date().toISOString())}`, 14, 30);
-          doc.text(`Kategori Data: ${this.exportTypeLabel}`, 14, 36);
-          doc.text(`Rentang Waktu: ${this.exportDateRangeLabel}`, 14, 42);
+          // Title
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(22);
+          doc.setTextColor(15, 23, 42); // Slate 900
+          doc.text("Laporan Riwayat Aktivitas", 14, 24);
+          
+          // Subtitle
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(100, 116, 139); // Slate 500
+          doc.text("Sistem Jemuran Pintar IoT Berbasis ESP32", 14, 31);
+
+          // Meta Data Box (Right side)
+          doc.setFontSize(9);
+          doc.setTextColor(71, 85, 105);
+          const pageWidth = doc.internal.pageSize.width;
+          doc.text(`Tanggal Cetak: ${this.formatAbsoluteTime(new Date().toISOString())}`, pageWidth - 14, 21, { align: 'right' });
+          doc.text(`Kategori Filter: ${this.exportTypeLabel}`, pageWidth - 14, 26, { align: 'right' });
+          doc.text(`Rentang Waktu: ${this.exportDateRangeLabel}`, pageWidth - 14, 31, { align: 'right' });
+
+          // Draw a subtle line separator
+          doc.setDrawColor(226, 232, 240); // Slate 200
+          doc.setLineWidth(0.5);
+          doc.line(14, 36, pageWidth - 14, 36);
 
           autoTable(doc, {
              head: [headers],
              body: rows,
-             startY: 50,
-             theme: 'striped',
-             headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
-             styles: { fontSize: 9, cellPadding: 4, textColor: [51, 65, 85] },
-             alternateRowStyles: { fillColor: [248, 250, 252] }
+             startY: 42,
+             theme: 'grid',
+             styles: { 
+                 font: 'helvetica', 
+                 fontSize: 9, 
+                 cellPadding: 5, 
+                 textColor: [51, 65, 85], // Slate 700
+                 lineColor: [226, 232, 240], // Slate 200
+                 lineWidth: 0.1
+             },
+             headStyles: { 
+                 fillColor: [30, 41, 59], // Slate 800
+                 textColor: 255, 
+                 fontStyle: 'bold',
+                 halign: 'left'
+             },
+             alternateRowStyles: { 
+                 fillColor: [248, 250, 252] // Slate 50
+             },
+             columnStyles: {
+                 0: { cellWidth: 35, fontStyle: 'bold', textColor: [15, 23, 42] } // Waktu column
+             },
+             didDrawPage: function (data) {
+                 // Page Footer
+                 doc.setFontSize(8);
+                 doc.setTextColor(148, 163, 184); // Slate 400
+                 doc.text(
+                     `Dokumen ini dihasilkan secara otomatis oleh Sistem IoT Smart Clothesline. Halaman ${doc.internal.getNumberOfPages()}`,
+                     data.settings.margin.left,
+                     doc.internal.pageSize.height - 10
+                 );
+             }
           });
           doc.save(`Laporan_IoT_Jemuran_${Date.now()}.pdf`);
        }
