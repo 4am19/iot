@@ -179,7 +179,7 @@
            <div v-if="exportModalOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click="exportModalOpen = false">
               
               <transition enter-active-class="transition duration-300 ease-out delay-75" enter-from-class="opacity-0 translate-y-8 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 translate-y-4 scale-95">
-                 <div v-if="exportModalOpen" class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 max-h-[90vh] flex flex-col" @click.stop>
+                 <div v-if="exportModalOpen" class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 max-h-[90vh] flex flex-col" @click.stop="exportTypeMenuOpen = false; exportDateMenuOpen = false">
                     
                     <!-- Modal Header -->
                     <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-800 rounded-t-3xl">
@@ -223,17 +223,14 @@
                                         <!-- Kategori Data -->
                      <div class="z-20">
                         <label class="block text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Kategori Data</label>
-                        <div class="relative">
-                           <button @click="exportTypeMenuOpen = !exportTypeMenuOpen" class="flex items-center justify-between w-full bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
+                        <div class="relative" @click.stop>
+                           <button @click="exportTypeMenuOpen = !exportTypeMenuOpen; exportDateMenuOpen = false" class="flex items-center justify-between w-full bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
                               <span class="flex items-center gap-2">
                                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                                  {{ exportTypeLabel }}
                               </span>
                               <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="exportTypeMenuOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                            </button>
-                           
-                           <!-- Invisible Overlay for closing -->
-                           <div v-if="exportTypeMenuOpen" @click="exportTypeMenuOpen = false" class="fixed inset-0 z-40"></div>
    
                            <transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
                               <div v-if="exportTypeMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700/60 overflow-hidden">
@@ -251,17 +248,14 @@
                                     <!-- Rentang Waktu -->
                      <div class="z-10 relative">
                         <label class="block text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Rentang Waktu</label>
-                        <div class="relative">
-                           <button @click="exportDateMenuOpen = !exportDateMenuOpen" class="flex items-center justify-between w-full bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
+                        <div class="relative" @click.stop>
+                           <button @click="exportDateMenuOpen = !exportDateMenuOpen; exportTypeMenuOpen = false" class="flex items-center justify-between w-full bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
                               <span class="flex items-center gap-2">
                                  <span class="w-2 h-2 rounded-full bg-blue-500"></span>
                                  {{ exportDateRangeLabel }}
                               </span>
                               <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="exportDateMenuOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                            </button>
-                           
-                           <!-- Invisible Overlay for closing -->
-                           <div v-if="exportDateMenuOpen" @click="exportDateMenuOpen = false" class="fixed inset-0 z-40"></div>
    
                            <transition enter-active-class="transition-all duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
                               <div v-if="exportDateMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700/60 overflow-hidden">
