@@ -133,7 +133,7 @@ setInterval(async () => {
         } else if (data.status === 'came_online') {
             console.log('\n[INFO] ESP32 KEMBALI ONLINE! Mengirim notifikasi WA...');
         } else {
-            // console.log(`[POLLING] Status API: ${data.status}`); // Uncomment untuk melihat setiap detik
+            console.log(`[POLLING] Status API: ${data.status}`); // Uncomment untuk melihat setiap detik
         }
     } catch (err) {
         console.error('\n[POLLING FATAL ERROR] Gagal menghubungi API Laravel:', err.message);
