@@ -67,6 +67,7 @@ class SensorController extends Controller
 
         if ($latestLog && $latestLog->clothesline_status === $validated['clothesline_status']) {
             $latestLog->update($validated);
+            $latestLog->touch(); // Wajib! Memaksa updated_at diperbarui meskipun nilai ldr/hujan sama persis
             $log = $latestLog;
         } else {
             $log = SensorLog::create($validated);
