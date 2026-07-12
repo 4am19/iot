@@ -39,7 +39,7 @@ async function connectToWhatsApp() {
     sock = makeWASocket({
         auth: state,
         printQRInTerminal: false,
-        logger: pino({ level: 'silent' }), // Suppress verbose logs
+        logger: pino({ level: 'trace' }), // Enable verbose logging to see why Hostinger drops connection
     });
 
     sock.ev.on('connection.update', (update) => {
