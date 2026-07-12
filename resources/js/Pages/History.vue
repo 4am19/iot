@@ -236,8 +236,8 @@
                               <svg class="w-5 h-5 transition-transform duration-300" :class="[exportTypeMenuOpen ? 'rotate-180 text-indigo-600 dark:text-indigo-400' : 'text-slate-400']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
                            </button>
    
-                           <transition enter-active-class="transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]" enter-from-class="opacity-0 -translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
-                              <div v-if="exportTypeMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-3 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-700/60 overflow-hidden py-2">
+                           <transition enter-active-class="transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]" enter-from-class="opacity-0 -translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
+                              <div v-if="exportTypeMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-3 origin-top bg-white dark:bg-slate-800 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-700/60 overflow-hidden py-2">
                                  <div class="px-2 space-y-1">
                                     <button v-for="filter in availableFilters" :key="filter.id" @click="selectExportType(filter.id); exportTypeMenuOpen = false" 
                                        class="w-full text-left px-4 py-3.5 rounded-2xl text-sm transition-all flex items-center justify-between group" 
@@ -267,8 +267,8 @@
                               <svg class="w-5 h-5 transition-transform duration-300" :class="[exportDateMenuOpen ? 'rotate-180 text-emerald-600 dark:text-emerald-400' : 'text-slate-400']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
                            </button>
    
-                           <transition enter-active-class="transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]" enter-from-class="opacity-0 -translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
-                              <div v-if="exportDateMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-3 bg-white dark:bg-slate-800 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-700/60 overflow-hidden py-2">
+                           <transition enter-active-class="transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]" enter-from-class="opacity-0 -translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
+                              <div v-if="exportDateMenuOpen" class="absolute z-50 top-full left-0 right-0 mt-3 origin-top bg-white dark:bg-slate-800 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-700/60 overflow-hidden py-2">
                                  <div class="px-2 space-y-1">
                                     <button v-for="range in [{id: 'all', label: 'Semua Waktu'}, {id: 'today', label: 'Hari Ini'}, {id: '7days', label: '7 Hari Terakhir'}, {id: 'custom', label: 'Custom Tanggal'}]" :key="range.id" @click="selectExportDateRange(range.id); exportDateMenuOpen = false" 
                                        class="w-full text-left px-4 py-3.5 rounded-2xl text-sm transition-all flex items-center justify-between group" 
@@ -281,8 +281,8 @@
                            </transition>
                         </div>
 
-                          <transition enter-active-class="transition-all duration-300" enter-from-class="opacity-0 -translate-y-2 max-h-0 overflow-hidden" enter-to-class="opacity-100 translate-y-0 max-h-40 overflow-hidden" leave-active-class="transition-all duration-200" leave-from-class="opacity-100 translate-y-0 max-h-40 overflow-hidden" leave-to-class="opacity-0 -translate-y-2 max-h-0 overflow-hidden">
-                             <div v-if="exportConfig.dateRange === 'custom'" class="grid grid-cols-2 gap-4 mt-4 bg-slate-50 dark:bg-slate-900/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative z-0">
+                          <transition enter-active-class="transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]" enter-from-class="opacity-0 -translate-y-4 max-h-0 scale-95" enter-to-class="opacity-100 translate-y-0 max-h-40 scale-100" leave-active-class="transition-all duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 max-h-40 scale-100" leave-to-class="opacity-0 -translate-y-2 max-h-0 scale-95">
+                             <div v-if="exportConfig.dateRange === 'custom'" class="grid grid-cols-2 gap-4 mt-4 bg-slate-50 dark:bg-slate-900/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative z-0 origin-top overflow-hidden">
                                 <div>
                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Dari Tanggal</label>
                                    <input type="date" v-model="exportConfig.startDate" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-sm">
