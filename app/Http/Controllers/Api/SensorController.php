@@ -314,7 +314,8 @@ class SensorController extends Controller
             return response()->json(['status' => 'no_data']);
         }
 
-        $secondsSinceLastUpdate = now()->diffInSeconds($latestLog->updated_at);
+        // Menggunakan abs() untuk memastikan nilai positif, atau membalik urutannya
+        $secondsSinceLastUpdate = abs(now()->diffInSeconds($latestLog->updated_at));
         $isCurrentlyOffline = $secondsSinceLastUpdate > 15; // Timeout 15 detik
 
         // Ambil status offline sebelumnya dari Cache (default: false / online)
