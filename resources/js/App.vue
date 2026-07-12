@@ -334,10 +334,10 @@ export default {
        try {
           const response = await axios.get('/api/dashboard-data');
           if (response.data) {
-             if (response.data.latestData && response.data.latestData.created_at) {
+             if (response.data.latestData && response.data.latestData.updated_at) {
                 // Konversi UTC dari backend ke Date object lokal
                 const now = new Date();
-                const lastUpdate = new Date(response.data.latestData.created_at);
+                const lastUpdate = new Date(response.data.latestData.updated_at);
                 const diffSeconds = (now - lastUpdate) / 1000;
                 
                 // Toleransi 120 detik (karena sistem polling & delay internet/ngrok)
