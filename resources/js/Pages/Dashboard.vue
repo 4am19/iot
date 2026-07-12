@@ -19,8 +19,34 @@
     <!-- Interface -->
     <div v-else class="space-y-6">
       
+      <!-- OFFLINE CRITICAL ALERT -->
+      <transition enter-active-class="transition duration-500 ease-out" enter-from-class="opacity-0 -translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition duration-300 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-4 scale-95">
+         <div v-if="!isDeviceOnline" class="relative overflow-hidden bg-rose-500/10 dark:bg-rose-500/20 border-l-4 border-rose-500 rounded-2xl p-6 shadow-2xl backdrop-blur-xl group mb-6">
+            <div class="absolute inset-0 bg-gradient-to-r from-rose-500/5 to-transparent pointer-events-none"></div>
+            <div class="absolute -left-10 -top-10 w-32 h-32 bg-rose-500/30 rounded-full blur-3xl animate-pulse"></div>
+            
+            <div class="flex flex-col md:flex-row items-start md:items-center gap-5 relative z-10">
+               <div class="flex-shrink-0 relative">
+                  <div class="w-14 h-14 bg-rose-100 dark:bg-rose-900/50 rounded-full flex items-center justify-center border border-rose-200 dark:border-rose-700/50">
+                     <span class="text-3xl animate-bounce">⚠️</span>
+                  </div>
+                  <div class="absolute inset-0 rounded-full border-[3px] border-rose-500 animate-ping opacity-20"></div>
+               </div>
+               <div class="flex-1">
+                  <h2 class="text-rose-600 dark:text-rose-400 font-black text-xl md:text-2xl tracking-tight mb-1 uppercase">Koneksi Perangkat Terputus</h2>
+                  <p class="text-rose-800/80 dark:text-rose-200/80 text-sm md:text-base font-medium">Sistem gagal mendeteksi sinyal (ping) dari ESP32. Fitur kontrol ditangguhkan demi keamanan. Silakan periksa tegangan daya alat atau koneksi Wi-Fi di area penjemuran.</p>
+               </div>
+               <div class="flex-shrink-0 mt-4 md:mt-0">
+                  <div class="px-5 py-2.5 bg-rose-500 text-white font-bold rounded-xl shadow-lg shadow-rose-500/30 text-sm uppercase tracking-widest animate-pulse border border-rose-400/50">
+                     SYSTEM OFFLINE
+                  </div>
+               </div>
+            </div>
+         </div>
+      </transition>
+
       <!-- Top Row -->
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" :class="{'opacity-60 grayscale-[30%] pointer-events-none transition-all duration-700': !isDeviceOnline && !isBleConnected}">
         
         <!-- Hero Banner Glassmorphic -->
         <div class="xl:col-span-2 relative bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl p-6 md:p-10 border border-white/50 dark:border-white/[0.08] overflow-hidden group animation-fade-in transition-all duration-500 hover:border-indigo-400/30 dark:hover:border-indigo-500/20 hover:shadow-[0_4px_20px_rgba(99,102,241,0.08)] dark:hover:shadow-[0_0_40px_rgba(99,102,241,0.08)] shadow-sm dark:shadow-none">
@@ -143,8 +169,8 @@
              <p class="text-center text-sm text-slate-500 mb-8 max-w-sm font-medium relative z-10">Alihkan ke Mode Manual untuk mengambil kendali rel motor secara penuh dari otomatis.</p>
              
              <div class="flex flex-col items-center justify-center relative z-10 w-full">
-               <button @click="toggleAutoMode" 
-                       class="relative flex h-20 w-44 items-center rounded-full transition-all duration-500 focus:outline-none cursor-pointer border-[6px] overflow-hidden hover:scale-105 active:scale-95"
+               <button @click="toggleAutoMode" :disabled="!isDeviceOnline && !isBleConnected"
+                       class="relative flex h-20 w-44 items-center rounded-full transition-all duration-500 focus:outline-none cursor-pointer border-[6px] overflow-hidden hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                        :class="settings.is_auto_mode ? 'bg-emerald-500 border-emerald-400/30 shadow-[inset_0_4px_10px_rgba(0,0,0,0.2),0_0_30px_rgba(16,185,129,0.3)]' : 'bg-slate-300 dark:bg-slate-600 border-slate-200 dark:border-slate-500/30 shadow-[inset_0_4px_10px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_4px_10px_rgba(0,0,0,0.3)]'">
                  
                  <div class="absolute inset-0 bg-black/5 opacity-0 hover:opacity-100 transition-opacity pointer-events-none"></div>
@@ -200,8 +226,8 @@
              <div class="grid grid-cols-1 gap-5 relative z-10">
                 <div v-if="!settings.is_auto_mode" class="absolute -inset-4 bg-rose-400/20 blur-2xl rounded-[3rem] animate-pulse pointer-events-none -z-10"></div>
                 
-                <button @click="pushCommand('move_out')" :disabled="(settings.is_auto_mode && !isBleConnected) || isSendingCommand"
-                        class="relative overflow-hidden w-full py-5 md:py-6 bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-600 hover:from-blue-400 hover:to-indigo-400 dark:hover:from-blue-500 dark:hover:to-indigo-500 text-white disabled:from-slate-200 disabled:to-slate-200 dark:disabled:from-slate-700 dark:disabled:to-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 font-bold text-base md:text-lg rounded-xl shadow-[0_8px_20px_rgba(79,70,229,0.25)] hover:shadow-[0_12px_30px_rgba(79,70,229,0.35)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-3 group">
+                <button @click="pushCommand('move_out')" :disabled="(settings.is_auto_mode && !isBleConnected) || isSendingCommand || (!isDeviceOnline && !isBleConnected)"
+                        class="relative overflow-hidden w-full py-5 md:py-6 bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-600 hover:from-blue-400 hover:to-indigo-400 dark:hover:from-blue-500 dark:hover:to-indigo-500 text-white disabled:from-slate-200 disabled:to-slate-200 dark:disabled:from-slate-700 dark:disabled:to-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 font-bold text-base md:text-lg rounded-xl shadow-[0_8px_20px_rgba(79,70,229,0.25)] hover:shadow-[0_12px_30px_rgba(79,70,229,0.35)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-3 group cursor-pointer disabled:cursor-not-allowed">
                    <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-[150%] skew-x-[-20deg] group-hover:animate-shine disabled:hidden"></div>
                    <div class="w-9 h-9 bg-white/15 rounded-lg group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm border border-white/10">
                       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
@@ -209,8 +235,8 @@
                    <span class="tracking-wide text-sm md:text-xl drop-shadow-md">KELUARKAN JEMURAN</span>
                 </button>
                 
-                <button @click="pushCommand('move_in')" :disabled="(settings.is_auto_mode && !isBleConnected) || isSendingCommand"
-                        class="relative overflow-hidden w-full py-5 md:py-6 bg-gradient-to-r from-rose-500 to-red-500 dark:from-rose-600 dark:to-red-600 hover:from-rose-400 hover:to-red-400 dark:hover:from-rose-500 dark:hover:to-red-500 text-white disabled:from-slate-200 disabled:to-slate-200 dark:disabled:from-slate-700 dark:disabled:to-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 font-bold text-base md:text-lg rounded-xl shadow-[0_8px_20px_rgba(244,63,94,0.25)] hover:shadow-[0_12px_30px_rgba(244,63,94,0.35)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-3 group">
+                <button @click="pushCommand('move_in')" :disabled="(settings.is_auto_mode && !isBleConnected) || isSendingCommand || (!isDeviceOnline && !isBleConnected)"
+                        class="relative overflow-hidden w-full py-5 md:py-6 bg-gradient-to-r from-rose-500 to-red-500 dark:from-rose-600 dark:to-red-600 hover:from-rose-400 hover:to-red-400 dark:hover:from-rose-500 dark:hover:to-red-500 text-white disabled:from-slate-200 disabled:to-slate-200 dark:disabled:from-slate-700 dark:disabled:to-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 font-bold text-base md:text-lg rounded-xl shadow-[0_8px_20px_rgba(244,63,94,0.25)] hover:shadow-[0_12px_30px_rgba(244,63,94,0.35)] disabled:shadow-none transition-all duration-300 outline-none transform active:scale-[0.98] disabled:active:scale-100 flex justify-center items-center gap-3 group cursor-pointer disabled:cursor-not-allowed">
                    <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-[150%] skew-x-[-20deg] group-hover:animate-shine disabled:hidden"></div>
                    <div class="w-9 h-9 bg-white/15 rounded-lg group-hover:scale-110 transition-transform flex items-center justify-center backdrop-blur-sm border border-white/10">
                       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -260,6 +286,7 @@ export default {
       settings: { is_auto_mode: true },
       latestData: {},
       historyData: [],
+      serverTime: null,
       isLoading: true,
       chart: null,
       // Animated counters
@@ -277,6 +304,12 @@ export default {
     }
   },
   computed: {
+    isDeviceOnline() {
+      if (!this.latestData.updated_at || !this.serverTime) return true; // Default anggap online sampai ada data
+      const lastUpdate = new Date(this.latestData.updated_at).getTime();
+      const serverNow = new Date(this.serverTime).getTime();
+      return (serverNow - lastUpdate) <= 15000;
+    },
     clotheslineStatus() {
       return this.settings.is_auto_mode ? this.latestData.clothesline_status : this.settings.manual_position;
     },
@@ -347,6 +380,7 @@ export default {
           this.settings    = response.data.setting;
           this.latestData  = response.data.latestData || {};
           this.historyData = response.data.history || [];
+          this.serverTime  = response.data.server_time;
           this.isLoading   = false;
 
           // Sinkronisasi status pending command dari server

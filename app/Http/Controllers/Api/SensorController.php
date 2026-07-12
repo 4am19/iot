@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 
 class SensorController extends Controller
 {
@@ -300,5 +301,90 @@ class SensorController extends Controller
             'pending_command' => $pending,
             'last_executed'   => $last,
         ]);
+    }
+
+    /**
+     * Endpoint untuk dipanggil oleh Node.js Bot setiap 10 detik.
+     * Mendeteksi jika ESP32 terputus (mati lampu/internet) dan memicu WhatsApp Alert.
+     */
+    public function healthCheck()
+    {
+        $latestLog = SensorLog::latest()->first();
+        if (!$latestLog) {
+            return response()->json(['status' => 'no_data']);
+        }
+
+        $secondsSinceLastUpdate = now()->diffInSeconds($latestLog->updated_at);
+        $isCurrentlyOffline = $secondsSinceLastUpdate > 15; // Timeout 15 detik
+
+        // Ambil status offline sebelumnya dari Cache (default: false / online)
+        $wasOffline = Cache::get('device_is_offline', false);
+
+        if ($isCurrentlyOffline && !$wasOffline) {
+            // TERPUTUS: Status berubah dari Online -> Offline
+            Cache::put('device_is_offline', true, now()->addDays(7));
+            $this->broadcastOfflineAlert(true, $latestLog->updated_at);
+            return response()->json(['status' => 'went_offline', 'last_seen' => $latestLog->updated_at]);
+        } 
+        elseif (!$isCurrentlyOffline && $wasOffline) {
+            // PULIH: Status berubah dari Offline -> Online
+            Cache::put('device_is_offline', false, now()->addDays(7));
+            $this->broadcastOfflineAlert(false, $latestLog->updated_at);
+            return response()->json(['status' => 'came_online', 'last_seen' => $latestLog->updated_at]);
+        }
+
+        return response()->json([
+            'status' => $isCurrentlyOffline ? 'offline' : 'online',
+            'seconds_since_last_update' => $secondsSinceLastUpdate
+        ]);
+    }
+
+    /**
+     * Broadcast pesan WhatsApp khusus untuk kegagalan sistem (Stress Test)
+     */
+    private function broadcastOfflineAlert($isOffline, $lastSeen)
+    {
+        $botUrl = env('WA_BOT_URL', 'http://localhost:3000/send-broadcast');
+        $usersWithPhone = User::whereNotNull('phone')->where('phone', '!=', '')->pluck('phone')->toArray();
+
+        if (empty($usersWithPhone)) {
+            return;
+        }
+
+        $timestamp = now()->timezone('Asia/Jakarta')->format('d M Y, H:i \W\I\B');
+        $lastSeenFormatted = $lastSeen->timezone('Asia/Jakarta')->format('d M Y, H:i:s \W\I\B');
+
+        if ($isOffline) {
+            $message = "*🔴 CRITICAL INCIDENT: KONEKSI TERPUTUS*\n"
+                     . "━━━━━━━━━━━━━━━━━━━━━━\n"
+                     . "Waktu Insiden: {$timestamp}\n"
+                     . "Sistem: Smart Clothesline (Node-01)\n"
+                     . "━━━━━━━━━━━━━━━━━━━━━━\n"
+                     . "⚠️ *Peringatan Kegagalan Perangkat*\n"
+                     . "Server mendeteksi bahwa perangkat ESP32 telah kehilangan koneksi ke jaringan pusat. Pemantauan cuaca otomatis saat ini **TIDAK AKTIF**.\n\n"
+                     . "Terakhir aktif: {$lastSeenFormatted}\n\n"
+                     . "Tindakan yang disarankan:\n"
+                     . "1. Periksa ketersediaan daya (mati lampu/kabel tercabut).\n"
+                     . "2. Pastikan sinyal Wi-Fi di area penjemuran stabil.\n\n"
+                     . "_- IT Operations & Control Center -_";
+        } else {
+            $message = "*🟢 INFO SISTEM: KONEKSI PULIH*\n"
+                     . "━━━━━━━━━━━━━━━━━━━━━━\n"
+                     . "Waktu Pemulihan: {$timestamp}\n"
+                     . "Sistem: Smart Clothesline (Node-01)\n"
+                     . "━━━━━━━━━━━━━━━━━━━━━━\n"
+                     . "✅ *Perangkat Kembali Online*\n"
+                     . "Perangkat ESP32 berhasil terhubung kembali ke jaringan pusat server. Seluruh sistem pemantauan dan kendali otomatis telah **BEROPERASI NORMAL**.\n\n"
+                     . "_- IT Operations & Control Center -_";
+        }
+
+        try {
+            Http::timeout(3)->post($botUrl, [
+                'numbers' => $usersWithPhone,
+                'message' => $message,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gagal mengirim WA Offline Alert: ' . $e->getMessage());
+        }
     }
 }

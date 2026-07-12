@@ -106,3 +106,30 @@ app.listen(PORT, () => {
     console.log(`Inisialisasi Baileys... mohon tunggu.`);
     connectToWhatsApp();
 });
+
+// ============================================================================
+// SATPAM JARINGAN: Polling ke Server Laravel setiap 10 detik
+// ============================================================================
+setInterval(async () => {
+    try {
+        // Panggil endpoint health-check Laravel
+        // Jika berjalan di production (Hostinger), gunakan URL aslinya
+        // Jika di lokal, gunakan http://localhost:8000
+        const isProduction = process.env.NODE_ENV === 'production' || __dirname.includes('public_html');
+        const apiUrl = isProduction 
+            ? 'https://belajarhijaiyah.my.id/api/device/health-check' 
+            : 'http://localhost:8000/api/device/health-check';
+
+        const res = await fetch(apiUrl);
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (data.status === 'went_offline') {
+            console.log('\n[CRITICAL] ESP32 TERPUTUS! Mengirim notifikasi WA...');
+        } else if (data.status === 'came_online') {
+            console.log('\n[INFO] ESP32 KEMBALI ONLINE! Mengirim notifikasi WA...');
+        }
+    } catch (err) {
+        // Diamkan jika server Laravel sedang mati agar log tidak penuh
+    }
+}, 10000);

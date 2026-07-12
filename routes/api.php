@@ -19,4 +19,7 @@ Route::post('/sensor/data', [SensorController::class, 'store'])
 Route::post('/sensor/data/batch', [SensorController::class, 'batchStore'])
     ->middleware(VerifyDeviceKey::class);
 
+// Endpoint Health Check untuk mendeteksi offline (dipanggil oleh Node.js bot)
+Route::get('/device/health-check', [SensorController::class, 'healthCheck']);
+
 // Semua route dashboard dan SPA menggunakan web middleware dan didefinisikan di routes/web.php
