@@ -104,15 +104,17 @@ class SensorController extends Controller
 
         $latestLog = SensorLog::latest()->first();
 
-        if ($latestLog && $latestLog->clothesline_status === $validated['clothesline_status']) {
+        // Buat log baru jika status jemuran berubah, ATAU jika dipicu oleh tombol fisik manual
+        if ($latestLog && $latestLog->clothesline_status === $validated['clothesline_status'] && !$request->input('button_pressed')) {
             $latestLog->update($validated);
             $latestLog->touch(); // Wajib! Memaksa updated_at diperbarui meskipun nilai ldr/hujan sama persis
             $log = $latestLog;
         } else {
             $log = SensorLog::create($validated);
+            
             // --- RULE ENGINE: NOTIFIKASI PERUBAHAN OTOMATIS ---
-            // Kirim notifikasi jika terjadi perubahan posisi secara otomatis (bukan manual)
-            if (!$request->input('button_pressed')) {
+            // Hanya kirim notifikasi WhatsApp jika pergerakan dipicu otomatis oleh sensor cuaca
+            if ($triggerSource === 'otomatis') {
                 $this->broadcastWhatsAppAlert($validated);
             }
         }
