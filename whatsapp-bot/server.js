@@ -117,9 +117,11 @@ setInterval(async () => {
         // Panggil endpoint health-check Laravel
         // Perbaikan: gunakan sub-domain 'iot.belajarhijaiyah.my.id' sesuai dengan APP_URL
         const isProduction = process.env.NODE_ENV === 'production' || __dirname.includes('public_html');
-        const apiUrl = isProduction 
+        let apiUrl = isProduction 
             ? 'https://iot.belajarhijaiyah.my.id/api/device/health-check' 
             : 'http://localhost:8000/api/device/health-check';
+        
+        apiUrl += '?t=' + Date.now();
 
         const res = await fetch(apiUrl);
         if (!res.ok) {
