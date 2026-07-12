@@ -71,11 +71,10 @@ class SensorController extends Controller
             $log = $latestLog;
         } else {
             $log = SensorLog::create($validated);
-            
-            // --- RULE ENGINE: KONDISI JEMURAN DITARIK KARENA CUACA ---
-            // Hanya kirim notifikasi jika status baru adalah "Di Dalam" dan bukan karena mode manual
-            if ($validated['clothesline_status'] === 'Di Dalam' && !$request->input('button_pressed')) {
-                $this->broadcastWhatsAppAlert($validated['weather_condition']);
+            // --- RULE ENGINE: NOTIFIKASI PERUBAHAN OTOMATIS ---
+            // Kirim notifikasi jika terjadi perubahan posisi secara otomatis (bukan manual)
+            if (!$request->input('button_pressed')) {
+                $this->broadcastWhatsAppAlert($validated['weather_condition'], $validated['clothesline_status']);
             }
         }
 
@@ -126,7 +125,7 @@ class SensorController extends Controller
     /**
      * Broadcast pesan WhatsApp ke semua user yang memiliki nomor telepon terdaftar.
      */
-    private function broadcastWhatsAppAlert($weather)
+    private function broadcastWhatsAppAlert($weather, $status)
     {
         $botUrl = env('WA_BOT_URL', 'http://localhost:3000/send-broadcast');
         $usersWithPhone = User::whereNotNull('phone')->where('phone', '!=', '')->pluck('phone')->toArray();
@@ -135,9 +134,15 @@ class SensorController extends Controller
             return; // Tidak ada nomor WA yang terdaftar
         }
 
-        $message = "🚨 *PERINGATAN DINI CUACA!*\n\n"
-                 . "Kondisi saat ini: *{$weather}*\n"
-                 . "Sistem telah otomatis menarik jemuran ke dalam ruangan untuk melindungi pakaian Anda.\n\n"
+        $emoji = $status === 'Di Dalam' ? '🚨' : '🌤️';
+        $actionText = $status === 'Di Dalam' 
+            ? "menarik jemuran ke dalam ruangan untuk melindungi pakaian Anda." 
+            : "mengeluarkan jemuran kembali ke luar ruangan karena cuaca telah membaik.";
+
+        $message = "{$emoji} *INFO SMART CLOTHESLINE*\n\n"
+                 . "Cuaca saat ini: *{$weather}*\n"
+                 . "Posisi Jemuran: *{$status}*\n\n"
+                 . "Sistem telah otomatis {$actionText}\n\n"
                  . "_- Smart Clothesline IoT_";
 
         try {
