@@ -179,7 +179,7 @@
            <div v-if="exportModalOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click="exportModalOpen = false">
               
               <transition enter-active-class="transition duration-300 ease-out delay-75" enter-from-class="opacity-0 translate-y-8 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 translate-y-4 scale-95">
-                 <div v-if="exportModalOpen" class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700" @click.stop>
+                 <div v-if="exportModalOpen" class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 max-h-[90vh] flex flex-col" @click.stop>
                     
                     <!-- Modal Header -->
                     <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-800 rounded-t-3xl">
@@ -195,7 +195,7 @@
                     </div>
 
                     <!-- Modal Body -->
-                    <div class="p-6 space-y-6 bg-white dark:bg-slate-800">
+                    <div class="p-6 space-y-6 bg-white dark:bg-slate-800 overflow-y-auto custom-scrollbar flex-1">
                        
                        <!-- Format File Selection -->
                        <div>
@@ -484,11 +484,11 @@ export default {
           if (this.exportConfig.type === 'audit') {
              data = data.filter(l => l.type === 'audit');
           } else if (this.exportConfig.type === 'otomatis') {
-             data = data.filter(l => l.type === 'pergerakan' && l.trigger_source === 'sensor');
+             data = data.filter(l => l.type === 'pergerakan' && l.trigger_source === 'otomatis');
           } else if (this.exportConfig.type === 'manual_dashboard') {
-             data = data.filter(l => l.type === 'pergerakan' && l.trigger_source === 'dashboard');
+             data = data.filter(l => l.type === 'pergerakan' && l.trigger_source === 'manual_dashboard');
           } else if (this.exportConfig.type === 'manual_fisik') {
-             data = data.filter(l => l.type === 'pergerakan' && l.trigger_source === 'button');
+             data = data.filter(l => l.type === 'pergerakan' && l.trigger_source === 'manual_fisik');
           }
        } else if (!this.isAdmin) {
           data = data.filter(l => l.type !== 'audit');
