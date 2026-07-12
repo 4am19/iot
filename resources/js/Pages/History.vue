@@ -80,69 +80,74 @@
            <p class="text-slate-500 text-sm mt-1 max-w-xs">Belum ada riwayat pergerakan atau data audit yang sesuai dengan filter yang dipilih.</p>
         </div>
 
-         <!-- Timeline / Data List -->
+         <!-- Data List (Card Stream Design) -->
          <div v-else class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 custom-scrollbar relative">
-            
-            <!-- Continuous vertical line for timeline -->
-            <div class="absolute left-[39.5px] sm:left-[51.5px] md:left-[59.5px] top-8 bottom-8 w-px bg-slate-200 dark:bg-slate-700/60"></div>
-
-            <div class="space-y-6 md:space-y-8 relative">
+            <div class="space-y-4 sm:space-y-5 relative">
                <transition-group name="list" appear>
-                  <div v-for="(log, index) in filteredLogs" :key="log.type + '-' + log.id" class="flex gap-4 sm:gap-5 md:gap-6 relative group">
+                  <div v-for="(log, index) in filteredLogs" :key="log.type + '-' + log.id" class="bg-white dark:bg-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-100 dark:border-slate-700/50 shadow-sm hover:shadow-md dark:shadow-none transition-all group">
                      
-                     <!-- Icon / Avatar Indicator -->
-                     <div class="relative z-10 flex-shrink-0 mt-1">
-                        <!-- Ping animation on the first item -->
-                        <div v-if="index === 0" class="absolute inset-0 rounded-2xl animate-ping opacity-30" :class="getIconConfig(log).bgClass"></div>
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-14 md:h-14 rounded-2xl flex items-center justify-center text-xl md:text-2xl shadow-sm border-4 border-white dark:border-slate-900 transition-transform duration-300 group-hover:scale-105" :class="[getIconConfig(log).bgClass, getIconConfig(log).textClass]">
-                           {{ getIconConfig(log).icon }}
+                     <!-- Card Header -->
+                     <div class="flex items-start justify-between gap-3 mb-3 sm:mb-4">
+                        <div class="flex items-center gap-3 sm:gap-4">
+                           <!-- Icon -->
+                           <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center text-lg sm:text-xl flex-shrink-0 shadow-sm border-2 border-white dark:border-slate-700 transition-transform group-hover:scale-105" :class="[getIconConfig(log).bgClass, getIconConfig(log).textClass]">
+                              {{ getIconConfig(log).icon }}
+                           </div>
+                           <!-- Title & Date -->
+                           <div class="flex flex-col">
+                              <div class="flex items-center gap-2">
+                                 <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">
+                                    {{ log.type === 'audit' ? 'Aktivitas Sistem' : 'Pergerakan Motor' }}
+                                 </span>
+                                 <!-- Optional small tag if we still want it -->
+                                 <span class="hidden sm:inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider" :class="[getIconConfig(log).tagBg, getIconConfig(log).textClass]">
+                                    {{ getIconConfig(log).tag }}
+                                 </span>
+                              </div>
+                              <span class="text-[10px] sm:text-xs font-semibold text-slate-400 mt-0.5">
+                                 {{ formatAbsoluteTime(log.created_at) }}
+                              </span>
+                           </div>
+                        </div>
+                        <!-- Relative Time Badge -->
+                        <div class="flex-shrink-0">
+                           <span class="inline-flex items-center gap-1 px-2 py-1.5 bg-slate-50 dark:bg-slate-900/50 text-slate-500 rounded-lg text-[10px] sm:text-xs font-semibold border border-slate-100 dark:border-slate-800">
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                              <span class="hidden sm:inline">{{ formatRelativeTime(log.created_at) }}</span>
+                              <span class="sm:hidden">{{ formatRelativeTime(log.created_at).replace(' yang lalu', '') }}</span>
+                           </span>
                         </div>
                      </div>
 
-                     <!-- Content Card -->
-                     <div class="flex-1 min-w-0 bg-white dark:bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-100 dark:border-slate-700/50 shadow-sm hover:shadow-md dark:shadow-none transition-all">
-                        
-                        <!-- Mobile-First Header -->
-                        <div class="flex flex-col gap-1 mb-3">
-                           <div class="flex items-center flex-wrap gap-2">
-                              <span class="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider" :class="[getIconConfig(log).tagBg, getIconConfig(log).textClass]">
-                                 {{ getIconConfig(log).tag }}
-                              </span>
-                              <span class="text-xs font-bold text-slate-400 flex items-center gap-1 ml-auto sm:ml-0">
-                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                 {{ formatRelativeTime(log.created_at) }}
-                              </span>
-                           </div>
-                           <span class="text-xs font-semibold text-slate-400/80 mt-0.5">{{ formatAbsoluteTime(log.created_at) }}</span>
-                        </div>
-
+                     <!-- Card Body (Full width mobile, indented desktop) -->
+                     <div class="pl-0 sm:pl-[64px]">
                         <!-- Content Payload for Sensor Movement -->
                         <div v-if="log.type === 'pergerakan'" class="flex flex-col gap-3">
-                           <p class="text-slate-700 dark:text-slate-200 font-medium text-sm sm:text-base leading-snug">
-                              Motor bergerak mengubah posisi jemuran menjadi <span class="font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700">{{ log.clothesline_status }}</span>
+                           <p class="text-slate-600 dark:text-slate-300 font-medium text-sm sm:text-base leading-relaxed">
+                              Sistem mengubah posisi jemuran menjadi <span class="font-bold px-2 py-0.5 rounded text-slate-800 dark:text-white border border-slate-200 dark:border-slate-600 shadow-sm" :class="log.clothesline_status.toLowerCase() === 'di luar' ? 'bg-amber-50 dark:bg-amber-900/30' : 'bg-indigo-50 dark:bg-indigo-900/30'">{{ log.clothesline_status }}</span>
                            </p>
                            
                            <!-- Sensor Metrics Grid -->
-                           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                              <div class="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center gap-3">
-                                 <span class="text-lg">🌤️</span>
+                           <div class="grid grid-cols-3 gap-2 mt-2">
+                              <div class="bg-slate-50 dark:bg-slate-900/40 p-2 sm:p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center sm:items-start gap-1 sm:gap-3 text-center sm:text-left">
+                                 <span class="text-base sm:text-lg">🌤️</span>
                                  <div>
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Cuaca</p>
-                                    <p class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{{ log.weather_condition }}</p>
+                                    <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase">Cuaca</p>
+                                    <p class="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 line-clamp-1">{{ log.weather_condition }}</p>
                                  </div>
                               </div>
-                              <div class="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center gap-3">
-                                 <span class="text-lg">☀️</span>
+                              <div class="bg-slate-50 dark:bg-slate-900/40 p-2 sm:p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center sm:items-start gap-1 sm:gap-3 text-center sm:text-left">
+                                 <span class="text-base sm:text-lg">☀️</span>
                                  <div>
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase">LDR</p>
-                                    <p class="text-xs font-bold text-slate-700 dark:text-slate-300">{{ log.ldr_value }}%</p>
+                                    <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase">LDR</p>
+                                    <p class="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300">{{ log.ldr_value }}%</p>
                                  </div>
                               </div>
-                              <div class="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center gap-3 col-span-2 sm:col-span-1">
-                                 <span class="text-lg">🌧️</span>
+                              <div class="bg-slate-50 dark:bg-slate-900/40 p-2 sm:p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center sm:items-start gap-1 sm:gap-3 text-center sm:text-left">
+                                 <span class="text-base sm:text-lg">🌧️</span>
                                  <div>
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Hujan</p>
-                                    <p class="text-xs font-bold text-slate-700 dark:text-slate-300">{{ log.rain_percentage }}%</p>
+                                    <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase">Hujan</p>
+                                    <p class="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300">{{ log.rain_percentage }}%</p>
                                  </div>
                               </div>
                            </div>
@@ -150,30 +155,30 @@
 
                         <!-- Content Payload for Audit Log -->
                         <div v-else-if="log.type === 'audit'" class="flex flex-col gap-3">
-                           <p class="text-slate-700 dark:text-slate-200 font-medium text-sm sm:text-base leading-snug">
-                              Pengguna <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ log.user?.name || 'Sistem' }}</span> tercatat melakukan aksi: 
-                              <span class="font-bold px-2 py-0.5 rounded ml-1" 
+                           <p class="text-slate-600 dark:text-slate-300 font-medium text-sm sm:text-base leading-relaxed">
+                              <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ log.user?.name || 'Sistem' }}</span> melakukan aksi pencatatan: 
+                              <span class="font-bold px-2 py-0.5 rounded ml-1 text-xs sm:text-sm" 
                                     :class="log.action.toLowerCase().includes('login') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : log.action.toLowerCase().includes('logout') ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'">
                                  {{ log.action }}
                               </span>
                            </p>
-                           <div class="flex flex-wrap gap-2 mt-2">
-                              <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 bg-slate-50 dark:bg-slate-900/50 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
-                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                           <div class="flex flex-wrap gap-2 mt-1">
+                              <div class="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-slate-500 bg-slate-50 dark:bg-slate-900/40 px-2 py-1.5 rounded border border-slate-100 dark:border-slate-800">
+                                 <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
                                  {{ log.ip_address || 'IP tidak terdeteksi' }}
                               </div>
-                              <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 bg-slate-50 dark:bg-slate-900/50 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 max-w-full truncate" :title="log.user_agent">
-                                 <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                              <div class="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-slate-500 bg-slate-50 dark:bg-slate-900/40 px-2 py-1.5 rounded border border-slate-100 dark:border-slate-800 max-w-[180px] sm:max-w-[250px]" :title="log.user_agent">
+                                 <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                  <span class="truncate">{{ log.user_agent || 'Perangkat tidak terdeteksi' }}</span>
                               </div>
                            </div>
                         </div>
-
                      </div>
-                 </div>
-              </transition-group>
-           </div>
-        </div>
+
+                  </div>
+               </transition-group>
+            </div>
+         </div>
 
      <!-- Export Modal Overlay -->
      <Teleport to="body">
