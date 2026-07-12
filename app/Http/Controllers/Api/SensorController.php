@@ -74,7 +74,7 @@ class SensorController extends Controller
             // --- RULE ENGINE: NOTIFIKASI PERUBAHAN OTOMATIS ---
             // Kirim notifikasi jika terjadi perubahan posisi secara otomatis (bukan manual)
             if (!$request->input('button_pressed')) {
-                $this->broadcastWhatsAppAlert($validated['weather_condition'], $validated['clothesline_status']);
+                $this->broadcastWhatsAppAlert($validated);
             }
         }
 
@@ -125,7 +125,7 @@ class SensorController extends Controller
     /**
      * Broadcast pesan WhatsApp ke semua user yang memiliki nomor telepon terdaftar.
      */
-    private function broadcastWhatsAppAlert($weather, $status)
+    private function broadcastWhatsAppAlert($data)
     {
         $botUrl = env('WA_BOT_URL', 'http://localhost:3000/send-broadcast');
         $usersWithPhone = User::whereNotNull('phone')->where('phone', '!=', '')->pluck('phone')->toArray();
@@ -134,16 +134,30 @@ class SensorController extends Controller
             return; // Tidak ada nomor WA yang terdaftar
         }
 
-        $emoji = $status === 'Di Dalam' ? '🚨' : '🌤️';
-        $actionText = $status === 'Di Dalam' 
-            ? "menarik jemuran ke dalam ruangan untuk melindungi pakaian Anda." 
-            : "mengeluarkan jemuran kembali ke luar ruangan karena cuaca telah membaik.";
+        $status = $data['clothesline_status'];
+        $weather = $data['weather_condition'];
+        $rain = $data['rain_percentage'] ?? 0;
+        $ldr = $data['ldr_value'] ?? 0;
 
-        $message = "{$emoji} *INFO SMART CLOTHESLINE*\n\n"
-                 . "Cuaca saat ini: *{$weather}*\n"
-                 . "Posisi Jemuran: *{$status}*\n\n"
-                 . "Sistem telah otomatis {$actionText}\n\n"
-                 . "_- Smart Clothesline IoT_";
+        $timestamp = now()->timezone('Asia/Jakarta')->format('d M Y, H:i:s \W\I\B');
+        $severity = $status === 'Di Dalam' ? '🔴 HIGH (WEATHER ANOMALY)' : '🟢 LOW (NORMALIZATION)';
+        $action = $status === 'Di Dalam' ? 'RETRACT_TO_SAFE_ZONE' : 'DEPLOY_TO_OUTDOOR';
+
+        $message = "🏢 *IoT SYSTEM NOTIFICATION*\n"
+                 . "━━━━━━━━━━━━━━━━━━━━━━\n"
+                 . "📍 *Node:* CLOTHESLINE-ESP32-01\n"
+                 . "⏱️ *Time:* {$timestamp}\n"
+                 . "⚠️ *Severity:* {$severity}\n"
+                 . "━━━━━━━━━━━━━━━━━━━━━━\n"
+                 . "*[TELEMETRY DATA]*\n"
+                 . "☁️ Weather: *" . strtoupper($weather) . "*\n"
+                 . "🌧️ Rain Sensor: *{$rain}%*\n"
+                 . "☀️ LDR Sensor: *{$ldr}*\n"
+                 . "⚙️ Actuator Status: *" . strtoupper($status) . "*\n"
+                 . "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                 . "*[ACTION LOG]*\n"
+                 . "Sistem telah mengeksekusi protokol *{$action}* secara otomatis berdasarkan parameter *Rule Engine* terbaru guna melindungi aset.\n\n"
+                 . "_- IT Operations & Control Center -_";
 
         try {
             // Kirim secara asinkron (timeout 2 detik agar tidak menghalangi response ESP32)
