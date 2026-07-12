@@ -340,8 +340,8 @@ export default {
                 const lastUpdate = new Date(response.data.latestData.updated_at);
                 const diffSeconds = (serverNow - lastUpdate) / 1000;
                 
-                // Toleransi 120 detik (karena sistem polling & delay internet/ngrok)
-                this.esp32Online = diffSeconds <= 120;
+                // Samakan toleransi dengan Dashboard.vue yaitu 15 detik untuk deteksi offline yang cepat
+                this.esp32Online = diffSeconds <= 15;
              } else {
                 this.esp32Online = false;
              }
